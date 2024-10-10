@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mistral AI Query UI</title>
+</head>
+<body>
+    <h1>Mistral AI Query</h1>
+    <input type="text" id="question" placeholder="Ask a question...">
+    <button id="submit">Submit</button>
+    <div id="response"></div>
+
+    <script>
+        document.getElementById("submit").onclick = async () => {
+            const question = document.getElementById("question").value;
+            const responseDiv = document.getElementById("response");
+
+            const response = await fetch("/query", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json"
+                },
+                body: JSON.stringify({ question })
+            });
+
+            const data = await response.json();
+            responseDiv.innerText = data.response;
+        };
+    </script>
+</body>
+</html>
