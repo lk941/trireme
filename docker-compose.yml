@@ -1,18 +1,41 @@
-version: '3.8'
-
 services:
-  mistral:
-    build:
-      context: ./mistral
-      dockerfile: Dockerfile
-    volumes:
-      - ./mistral:/app  # If you have any local inference scripts
-
-  fastapi:
+  app:
+    container_name: katalyst-app
     build:
       context: .
       dockerfile: Dockerfile
     ports:
       - "8000:8000"
-    depends_on:
-      - mistral
+    networks:
+      - ollama_network
+
+  ollama:
+    container_name: ollama
+    image: ollama/ollama
+    environment:
+      - NVIDIA_VISIBLE_DEVICES=all
+      - OLLAMA_LLM_LIBRARY=cuda
+      - OLLAMA_HOST=http://0.0.0.0:11434
+      - OLLAMA_GPU_OVERHEAD=0
+    command: >
+      serve && pull mistral
+    ports:
+      - "11434:11434"
+    volumes:
+      - ollama:/root/.ollama
+    networks:
+      - ollama_network
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
+
+networks:
+  ollama_network:
+    external: true
+
+volumes:
+  ollama:  # Define the ollama volume here

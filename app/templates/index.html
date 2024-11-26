@@ -16,16 +16,38 @@
             const question = document.getElementById("question").value;
             const responseDiv = document.getElementById("response");
 
-            const response = await fetch("/query", {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/json"
-                },
-                body: JSON.stringify({ question })
-            });
+            // Display "Loading..." while waiting for the response
+            responseDiv.innerText = "Loading...";
 
-            const data = await response.json();
-            responseDiv.innerText = data.response;
+            // Send the query to the server
+            try {
+                const response = await fetch("/query", {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json"
+                    },
+                    body: JSON.stringify({ question })
+                });
+
+                // Handle the response
+                if (response.ok) {
+                    const data = await response.json();
+
+                    // Check if data.response exists, if not, display an error
+                    if (data.response && data.response.trim() !== "") {
+                        responseDiv.innerText = data.response;
+                    } else {
+                        responseDiv.innerText = "Error: Received an empty response.";
+                        console.warn("Received empty response from the server:", data);
+                    }
+                } else {
+                    responseDiv.innerText = "Error: Unable to retrieve response.";
+                    console.error("Server error:", response.status, response.statusText);
+                }
+            } catch (error) {
+                responseDiv.innerText = "Error: Network issue or server not responding.";
+                console.error("Network or server error:", error);
+            }
         };
     </script>
 </body>
