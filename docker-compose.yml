@@ -1,6 +1,6 @@
 services:
   app:
-    container_name: katalyst-app
+    container_name: trireme_app
     build:
       context: .
       dockerfile: Dockerfile
@@ -9,20 +9,34 @@ services:
     networks:
       - ollama_network
 
+  postgres:
+    image: postgres:15
+    container_name: postgres
+    environment:
+      POSTGRES_USER: lklq
+      POSTGRES_PASSWORD: "88888888"
+      POSTGRES_DB: trireme_db
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - ollama_network
+
   ollama:
-    container_name: ollama
     image: ollama/ollama
+    container_name: ollama
     environment:
       - NVIDIA_VISIBLE_DEVICES=all
       - OLLAMA_LLM_LIBRARY=cuda
       - OLLAMA_HOST=http://0.0.0.0:11434
       - OLLAMA_GPU_OVERHEAD=0
-    command: >
-      serve && pull mistral
+    entrypoint: ["/root/entrypoint.sh"]
     ports:
-      - "11434:11434"
+      - "11435:11434"  # Change host port to avoid conflicts
     volumes:
       - ollama:/root/.ollama
+      - ./entrypoint.sh:/root/entrypoint.sh  # Mount entrypoint script
     networks:
       - ollama_network
     deploy:
@@ -38,4 +52,7 @@ networks:
     external: true
 
 volumes:
-  ollama:  # Define the ollama volume here
+  ollama:
+    driver: local
+  postgres_data:
+    driver: local
