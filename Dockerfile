@@ -1,5 +1,4 @@
-# Use an official Python runtime as a parent image
-FROM python:3.9-slim
+FROM python:3.11-slim
 
 # Set the working directory in the container
 WORKDIR /app
@@ -10,9 +9,11 @@ COPY requirements.txt .
 # Install dependencies from requirements.txt
 RUN pip install --no-cache-dir -r requirements.txt
 
-
-# Copy the FastAPI application files
+# Copy the FastAPI application files into the container
 COPY ./app ./app
+
+# Set PYTHONPATH to include the /app directory
+ENV PYTHONPATH=/app
 
 # Expose the FastAPI port
 EXPOSE 8000

@@ -1,5 +1,8 @@
 {
   "dependencies": {
-    "pandas": "^0.0.3"
+    "docx": "^9.1.0",
+    "openai": "^4.76.3",
+    "pandas": "^0.0.3",
+    "spacy": "^0.0.4"
   }
 }

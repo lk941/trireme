@@ -3,51 +3,157 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Mistral AI Query UI</title>
+    <title>Test Script Generator</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+        }
+        .container {
+            max-width: 500px;
+            margin: auto;
+            text-align: center;
+        }
+        input[type="file"] {
+            margin: 10px 0;
+        }
+        button {
+            padding: 10px 20px;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            cursor: pointer;
+            font-size: 16px;
+        }
+        button:hover {
+            background-color: #45a049;
+        }
+        .download-link {
+            margin-top: 20px;
+            display: none;
+        }
+        .download-link a {
+            color: #007BFF;
+            text-decoration: none;
+        }
+        .download-link a:hover {
+            text-decoration: underline;
+        }
+        .loading {
+            display: none;
+            margin: 10px;
+            font-style: italic;
+            color: gray;
+        }
+    </style>
 </head>
 <body>
-    <h1>Mistral AI Query</h1>
-    <input type="text" id="question" placeholder="Ask a question...">
-    <button id="submit">Submit</button>
-    <div id="response"></div>
+    <div class="container">
+        <h1>Test Script Generator</h1>
+        <p>Upload a document to generate test scripts.</p>
+        <form id="uploadForm">
+            <input type="file" id="fileInput" accept=".docx, .xlsx" required />
+            <br />
+            <button type="submit">Submit</button>
+        </form>
+        <p class="loading" id="loading">Processing... Please wait.</p>
+        <div class="download-link" id="downloadLink">
+            <p>Download your generated test scripts:</p>
+            <a id="downloadUrl" href="#" target="_blank">Download Test Scripts</a>
+        </div>
+
+        <h1>Trigger Job</h1>
+        <label for="adviceC">Enter adviceC ("C" = Create, "D" = Delete):</label>
+        <input type="text" id="adviceC" placeholder="Enter C or D">
+        <button id="triggerJobButton">Trigger Job</button>
+        <pre id="result"></pre>
+    </div>
 
     <script>
-        document.getElementById("submit").onclick = async () => {
-            const question = document.getElementById("question").value;
-            const responseDiv = document.getElementById("response");
+        document.getElementById("uploadForm").addEventListener("submit", async (event) => {
+            event.preventDefault();
 
-            // Display "Loading..." while waiting for the response
-            responseDiv.innerText = "Loading...";
+            const fileInput = document.getElementById("fileInput");
+            const loadingText = document.getElementById("loading");
+            const downloadLink = document.getElementById("downloadLink");
+            const downloadUrl = document.getElementById("downloadUrl");
+            const allowedExtensions = ['docx', 'xlsx'];
 
-            // Send the query to the server
+            if (fileInput.files.length === 0) {
+                alert("Please select a file to upload.");
+                return;
+            }
+            if (fileInput.files[0]) {
+                console.log("reached files[0]")
+                const fileName = fileInput.files[0].name;
+                const fileExtension = fileName.split('.').pop().toLowerCase();
+                // Check if the file extension is allowed
+                if (!allowedExtensions.includes(fileExtension)) {
+                    console.log("extension not recognised")
+                    alert('Invalid file type. Only .docx and .xlsx files are allowed.');
+                    
+                    // Clear the file input
+                    fileInput.value = '';
+                    return;
+                }
+            }
+            console.log("new formdata")
+            const formData = new FormData();
+            console.log("formData append")
+            formData.append("file", fileInput.files[0]);
+
+            loadingText.style.display = "block";
+            downloadLink.style.display = "none";
+            console.log("try catch block")
             try {
-                const response = await fetch("/query", {
+                console.log("triggering upload funct")
+                const response = await fetch("http://127.0.0.1:8000/upload/", {
                     method: "POST",
-                    headers: {
-                        "Content-Type": "application/json"
-                    },
-                    body: JSON.stringify({ question })
+                    body: formData,
                 });
 
-                // Handle the response
-                if (response.ok) {
-                    const data = await response.json();
-
-                    // Check if data.response exists, if not, display an error
-                    if (data.response && data.response.trim() !== "") {
-                        responseDiv.innerText = data.response;
-                    } else {
-                        responseDiv.innerText = "Error: Received an empty response.";
-                        console.warn("Received empty response from the server:", data);
-                    }
-                } else {
-                    responseDiv.innerText = "Error: Unable to retrieve response.";
-                    console.error("Server error:", response.status, response.statusText);
+                if (!response.ok) {
+                    throw new Error("Failed to generate test scripts. Please try again.");
                 }
+
+                // Create a download link for the generated Excel file
+                const blob = await response.blob();
+                const url = URL.createObjectURL(blob);
+                downloadUrl.href = url;
+                downloadUrl.download = "test-scripts.xlsx";
+
+                loadingText.style.display = "none";
+                downloadLink.style.display = "block";
             } catch (error) {
-                responseDiv.innerText = "Error: Network issue or server not responding.";
-                console.error("Network or server error:", error);
+                loadingText.style.display = "none";
+                alert(error.message);
             }
+        });
+
+        document.getElementById("triggerJobButton").onclick = () => {
+            const adviceCValue = document.getElementById("adviceC").value;
+
+            // Check for valid input
+            if (!adviceCValue || (adviceCValue !== "C" && adviceCValue !== "D")) {
+                document.getElementById("result").innerText = "Error: Please enter 'C' for Create or 'D' for Delete.";
+                return;
+            }
+
+            const formData = new FormData();
+            formData.append("adviceC", adviceCValue);
+
+            // Trigger the job API call
+            fetch("/trigger-job", {
+                method: "POST",
+                body: formData
+            })
+            .then(response => response.json())
+            .then(data => {
+                document.getElementById("result").innerText = JSON.stringify(data, null, 2);
+            })
+            .catch(error => {
+                document.getElementById("result").innerText = `Error: ${error}`;
+            });
         };
     </script>
 </body>

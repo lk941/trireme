@@ -1,3 +1,9 @@
 .venv
 .vscode
 __pycache__
+env/
+node_modules
+app/user_requests
+testdata
+mapping.json
+app/scripts
