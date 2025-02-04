@@ -7,3 +7,5 @@ app/user_requests
 testdata
 mapping.json
 app/scripts
+frontend/dist
+frontend/.angular
