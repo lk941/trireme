@@ -5,5 +5,6 @@ env/
 node_modules
 app/user_requests
 testdata
+generateddata
 mapping.json
 app/scripts

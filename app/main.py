@@ -1,31 +1,37 @@
-from fastapi import FastAPI, File, UploadFile, HTTPException, Form
+from fastapi import BackgroundTasks, FastAPI, File, UploadFile, HTTPException, Form
 from fastapi.responses import FileResponse, HTMLResponse
+from fastapi.staticfiles import StaticFiles
 from fastapi.middleware.cors import CORSMiddleware
 import httpx
-from pydantic import BaseModel
+import shutil
+from typing import List, Dict, Optional, Union
+from pydantic import BaseModel, Field
 import pandas as pd
 import json
 import os
 from openai import OpenAI
 from docx import Document
-import pandas as pd
 import tempfile
 from pathlib import Path
 import openpyxl
 from dotenv import load_dotenv
 import threading
 import uvicorn
+from openpyxl import load_workbook
+import logging
+# from scripts.anonymise import process_file_for_anonymization, de_anonymize_with_generated_terms
 
 # Load environment variables
 load_dotenv()
 
 # step 1 find a way to make the excel anonymisation work (/)
 # step 2 make sure excel to test script by gpt works (/)
+
+# Freedom sprint: Finish UI pages on wednesday, and streamline anonymisation -> generation -> De-anonymisation
 # step 3 do up database, make sure db upload and storage works
 # step 4 create functions to retrieve and craft better prompt
 # step 5 link to AI and test
-# step 6 get UI up
-print(os.environ.get("OPENAI_API_KEY"))
+
 
 # Initialize OpenAI API client
 openai = OpenAI(api_key=os.environ.get("OPENAI_API_KEY"))  # Replace with your API key
@@ -38,31 +44,140 @@ BASE_DIR = Path(__file__).resolve().parent
 
 # Define file paths based on environment
 if CONFIG_MODE == "docker":
-    STATIC_DIR = BASE_DIR / "app" / "templates"
+    STATIC_DIR = BASE_DIR / "templates"
+    TEMPLATE_PATH = BASE_DIR / "testdata" / "DPP2_Template.xlsx"
+    OUTPUT_PATH = BASE_DIR / "generateddata" / "updated_test_cases.xlsx"
+    print(TEMPLATE_PATH)
 else:
     STATIC_DIR = BASE_DIR / "templates"
+    TEMPLATE_PATH = BASE_DIR / "testdata" / "DPP2_Template.xlsx"
+    OUTPUT_PATH = BASE_DIR / "generateddata" / "updated_test_cases.xlsx"
     
 print(f"Running in {CONFIG_MODE} mode")
+
+logging.basicConfig(level=logging.DEBUG)
+
+app.mount("/frontend", StaticFiles(directory="../frontend/dist", html=True), name="static")
+
 
 # Add CORS middleware
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:8000"],  # Adjust the origin as needed
+    allow_origins=["*"],  # Allow all origins
     allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
+    allow_methods=["*"],  # Allow all methods
+    allow_headers=["*"],  # Allow all headers
 )
 
-# Function to load JSON files
-def load_request_data(file_path):
-    with open(file_path, "r") as file:
-        return json.load(file)
+# @app.get("/")
+# async def root():
+#     return {"message": "Welcome to the API!"}
 
-# Endpoint to load HTML UI
 @app.get("/", response_class=HTMLResponse)
 async def get_ui():
     with open(BASE_DIR / "templates" / "index.html") as f:
         return HTMLResponse(content=f.read())
+
+class TestConnectionPayload(BaseModel):
+    message: str
+
+@app.post("/test-connection")
+async def test_connection(payload: TestConnectionPayload):
+    logging.debug(f"Payload: {payload}")
+    print(f"Received message: {payload.message}")
+    return {"message": f"Message received: {payload.message}"}
+
+
+def cleanup_files(temp_dir, file_path):
+    if os.path.exists(file_path):
+        os.remove(file_path)
+    if os.path.exists(temp_dir):
+        os.rmdir(temp_dir)
+
+# @app.post("/anonymize")
+# async def anonymize(
+#     file: UploadFile = File(...),
+#     keywords: str = Form(...),
+#     background_tasks: BackgroundTasks = BackgroundTasks()
+# ):
+#     print("Anonymize backend triggered")
+#     temp_dir = tempfile.mkdtemp()  # Create temporary directory
+#     try:
+#         # Save the uploaded file
+#         file_path = os.path.join(temp_dir, file.filename)
+#         keywords_list = keywords.split(",")
+#         with open(file_path, "wb") as f:
+#             f.write(await file.read())
+
+#         # Process the file
+#         excel_file_path = process_file_for_anonymization(file_path, keywords_list)
+
+#         # Add cleanup task
+#         background_tasks.add_task(cleanup_files, temp_dir, file_path)
+
+#         # Return the file response
+#         return FileResponse(
+#             excel_file_path,
+#             headers={"Content-Disposition": 'attachment; filename="anonymized.xlsx"'},
+#             media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+#         )
+#     except Exception as e:
+#         # Cleanup in case of errors
+#         cleanup_files(temp_dir, file_path)
+#         raise e
+
+
+# @app.post("/deanonymize")
+# async def deanonymize(file: UploadFile = File(...), background_tasks: BackgroundTasks = BackgroundTasks()):
+#     print("Deanonymize backend triggered")
+#     temp_dir = tempfile.mkdtemp()  # Create a single temporary directory
+#     try:
+#         # Save uploaded file to temporary directory
+#         file_path = os.path.join(temp_dir, file.filename)
+#         with open(file_path, "wb") as f:
+#             f.write(await file.read())
+        
+#         # Use pandas.ExcelFile with context manager to ensure it closes
+#         with pd.ExcelFile(file_path) as input_excel:
+#             cover_page_df = input_excel.parse(sheet_name=0)
+#             test_case_sheet_df = input_excel.parse(sheet_name=1)
+
+#         # Process the data
+#         restored_cover_page_df = de_anonymize_with_generated_terms(cover_page_df)
+#         restored_test_case_sheet_df = de_anonymize_with_generated_terms(test_case_sheet_df)
+        
+#         # Save the deanonymized file
+#         deanonymized_excel_path = os.path.join(temp_dir, "deanonymized_file.xlsx")
+#         with pd.ExcelWriter(deanonymized_excel_path, engine='xlsxwriter') as writer:
+#             restored_cover_page_df.to_excel(writer, sheet_name="Cover Page", index=False)
+#             restored_test_case_sheet_df.to_excel(writer, sheet_name="Test Cases", index=False)
+
+#         print(f"Deanonymized Excel file saved to {deanonymized_excel_path}.")
+        
+#         # Schedule cleanup of temporary files
+#         background_tasks.add_task(cleanup_files, temp_dir, deanonymized_excel_path)
+
+#         # Return the file response with correct headers
+#         return FileResponse(
+#             deanonymized_excel_path,
+#             headers={"Content-Disposition": 'attachment; filename="deanonymized.xlsx"'},
+#             media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+#         )
+#     except Exception as e:
+#         print(f"Error: {e}")
+#         raise HTTPException(status_code=500, detail="An error occurred while processing the file.")
+
+def cleanup_temp_dir(temp_dir):
+    try:
+        shutil.rmtree(temp_dir)  # Removes the directory and all its contents
+        print(f"Cleaned up temporary directory: {temp_dir}")
+    except Exception as e:
+        print(f"Failed to clean up temporary directory: {e}")
+        
+# Function to load JSON files
+def load_request_data(file_path):
+    with open(file_path, "r") as file:
+        return json.load(file)
 
 # Function to run the FastAPI server
 def run_fastapi():
@@ -79,21 +194,21 @@ async def upload_file(file: UploadFile = File(...)):
         with open(file_path, "wb") as f:
             f.write(await file.read())
             
-        if (file.filename.split('.').pop().lower() == ".docx"):
+        if (file.filename.split('.').pop().lower() == "docx"):
             # Extract text from the Word document
             document_text = extract_text_from_docx(file_path)
 
             # Generate test scripts using OpenAI
             test_scripts = await generate_test_scripts(document_text)
         else:
-            # Extract text from the Word document
+            # Extract text from the Excel file
             document_text = extract_excel_content(file_path)
 
             # Generate test scripts using OpenAI
             test_scripts = await generate_test_scripts(document_text)
 
         # Generate Excel file with test scripts
-        excel_file_path = generate_excel_file(test_scripts)
+        excel_file_path = template_excel(test_scripts, TEMPLATE_PATH, OUTPUT_PATH)
 
         # Send the Excel file as a response
         return FileResponse(excel_file_path, filename="test-scripts.xlsx")
@@ -101,6 +216,66 @@ async def upload_file(file: UploadFile = File(...)):
         # Clean up temporary files
         if os.path.exists(file_path):
             os.remove(file_path)
+            
+@app.post("/generate-test-cases")
+async def generate_test_cases(file: UploadFile = File(...)):
+    try:
+        temp_dir = tempfile.mkdtemp()
+        file_path = os.path.join(temp_dir, file.filename)
+        with open(file_path, "wb") as f:
+            f.write(await file.read())
+        
+        if file.filename.split('.').pop().lower() == "docx":
+            document_text = extract_text_from_docx(file_path)
+        else:
+            document_text = extract_excel_content(file_path)
+        
+        test_cases = await generate_test_scripts(document_text)
+        return {"test_cases": test_cases}
+    finally:
+        if os.path.exists(file_path):
+            os.remove(file_path)
+            
+
+class TestCase(BaseModel):
+    Test_Case_ID: str
+    Test_Case_Name: str
+    Pre_Condition: str
+    Actor_s: str
+    Test_Data: Optional[Dict[str, Union[str, List[str]]]] = None 
+    Step_Description: List[str]
+    Expected_Result: str
+
+
+class GenerateExcelRequest(BaseModel):
+    test_cases: List[TestCase]
+
+# def template_excel(test_cases: List[TestCase], template_path: str, output_path: str) -> str:
+#     workbook = load_workbook(template_path)
+#     sheet = workbook.active
+
+#     for row, test_case in enumerate(test_cases, start=2):
+#         sheet.cell(row=row, column=1).value = test_case.Test_Case_ID
+#         sheet.cell(row=row, column=2).value = test_case.Test_Case_Name
+#         sheet.cell(row=row, column=3).value = test_case.Pre_Condition
+#         sheet.cell(row=row, column=4).value = test_case.Actor_s
+#         sheet.cell(row=row, column=5).value = str(test_case.Test_Data)
+#         sheet.cell(row=row, column=6).value = test_case.Step_Description
+#         sheet.cell(row=row, column=7).value = test_case.Expected_Result
+
+#     workbook.save(output_path)
+#     return output_path
+
+@app.post("/generate-excel")
+async def generate_excel(request: GenerateExcelRequest):
+    test_cases = request.test_cases
+    print("Received test cases:", test_cases)  # Log the parsed test cases
+    excel_file_path = template_excel(test_cases, TEMPLATE_PATH, OUTPUT_PATH)
+    return FileResponse(
+        excel_file_path,
+        headers={"Content-Disposition": 'attachment; filename="test-scripts.xlsx"'},
+        media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+    )
 
 # Extract text from a Word document
 def extract_text_from_docx(file_path: str) -> str:
@@ -135,17 +310,47 @@ async def generate_test_scripts(document_text: str) -> list:
         model="gpt-4o-mini",  # Replace with your model
         messages=[
             {"role": "system", "content": "You are an assistant that generates software test scripts."},
-            {"role": "user", "content": f"Generate test scripts for the following document:\n\n{document_text}. Limit your response to the test script contents only."}
+            {"role": "user", "content": (
+            f"Generate test scripts for the following document:\n\n{document_text}. "
+            "Limit your response to only the test script contents in JSON format. "
+            "Return the test cases as a JSON array (list) with each test case containing the following attributes: "
+            "Test_Case_ID, Test_Case_Name, Pre_Condition, Actor_s, Test_Data, Step_Description, and Expected_Result. "
+            "Do not include any additional text, just the JSON array in text."
+            )}
         ]
     )
     output = response.choices[0].message.content
-    # Convert output into a list of test cases
-    return [{"Test Script": line.strip()} for line in output.split("\n") if line.strip()]
+    
+    # Remove the ```json and ``` delimiters if present
+    if output.startswith("```json"):
+        output = output[7:]  # Remove the initial ```json
+    if output.endswith("```"):
+        output = output[:-3]  # Remove the closing ```
+    
+    print(output)
+    
+    try:
+        # Parse the JSON response
+        test_cases = json.loads(output)
+        return test_cases  # Return the list of test case dictionaries
+    except json.JSONDecodeError:
+        raise ValueError("The API response is not valid JSON. Ensure the prompt enforces proper JSON formatting.")
 
-# Generate Excel file from test scripts
-def generate_excel_file(test_scripts: list) -> str:
-    df = pd.DataFrame(test_scripts)
+def template_excel(test_cases: List[TestCase], template_path: str, output_path: str) -> str:
+    workbook = load_workbook(template_path)
+    sheet = workbook.active
+
+    for row, test_case in enumerate(test_cases, start=42):
+        sheet.cell(row=row, column=1).value = test_case.Test_Case_ID
+        sheet.cell(row=row, column=2).value = test_case.Test_Case_Name
+        sheet.cell(row=row, column=3).value = test_case.Pre_Condition
+        sheet.cell(row=row, column=4).value = test_case.Actor_s
+        sheet.cell(row=row, column=5).value = str(test_case.Test_Data)
+        sheet.cell(row=row, column=6).value = "\n".join(test_case.Step_Description)  # Join list into a string
+        sheet.cell(row=row, column=7).value = test_case.Expected_Result
+    
+    # Save the updated workbook to the output path
     temp_dir = tempfile.mkdtemp()
     excel_file_path = os.path.join(temp_dir, "test-scripts.xlsx")
-    df.to_excel(excel_file_path, index=False)
+    workbook.save(excel_file_path)
     return excel_file_path
