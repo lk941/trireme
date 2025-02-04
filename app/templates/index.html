@@ -61,12 +61,6 @@
             <p>Download your generated test scripts:</p>
             <a id="downloadUrl" href="#" target="_blank">Download Test Scripts</a>
         </div>
-
-        <h1>Trigger Job</h1>
-        <label for="adviceC">Enter adviceC ("C" = Create, "D" = Delete):</label>
-        <input type="text" id="adviceC" placeholder="Enter C or D">
-        <button id="triggerJobButton">Trigger Job</button>
-        <pre id="result"></pre>
     </div>
 
     <script>
@@ -130,31 +124,7 @@
             }
         });
 
-        document.getElementById("triggerJobButton").onclick = () => {
-            const adviceCValue = document.getElementById("adviceC").value;
-
-            // Check for valid input
-            if (!adviceCValue || (adviceCValue !== "C" && adviceCValue !== "D")) {
-                document.getElementById("result").innerText = "Error: Please enter 'C' for Create or 'D' for Delete.";
-                return;
-            }
-
-            const formData = new FormData();
-            formData.append("adviceC", adviceCValue);
-
-            // Trigger the job API call
-            fetch("/trigger-job", {
-                method: "POST",
-                body: formData
-            })
-            .then(response => response.json())
-            .then(data => {
-                document.getElementById("result").innerText = JSON.stringify(data, null, 2);
-            })
-            .catch(error => {
-                document.getElementById("result").innerText = `Error: ${error}`;
-            });
-        };
+        
     </script>
 </body>
 </html>

@@ -1,6 +1,6 @@
 services:
   app:
-    container_name: trireme_app
+    container_name: trireme_backend
     build:
       context: .
       dockerfile: Dockerfile
@@ -8,15 +8,20 @@ services:
       - "8000:8000"
     env_file:
       - ./env/.env.docker  
-    environment:
-      - DISPLAY=sakana:0.0
-      - XDG_RUNTIME_DIR=/tmp
-      - QT_QPA_PLATFORM=xcb
-      - XDG_SESSION_TYPE=x11
     volumes:
-      - /tmp/.X11-unix:/tmp/.X11-unix
+      - ./frontend/dist:/frontend/dist
     # networks:
     #   - ollama_network
+
+  frontend:
+    container_name: trireme_frontend
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    ports:
+      - "4200:80"  # Map Angular app to port 4200
+    depends_on:
+      - app  # Ensure the backend is up before the frontend
 
   postgres:
     image: postgres:15

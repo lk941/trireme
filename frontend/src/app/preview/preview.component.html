@@ -1,0 +1,69 @@
+<div>
+  <h2>Preview and Edit Test Cases</h2>
+
+  <!-- File Upload -->
+  <div>
+    <label for="file-upload">Upload a file:</label>
+    <input
+      id="file-upload"
+      type="file"
+      (change)="onFileChange($event)"
+      accept=".docx, .xlsx"
+    />
+    <button (click)="onSubmit($event)" [disabled]="!file || isProcessing">
+      Generate Test Cases
+    </button>
+  </div>
+
+  <!-- Loading Spinner -->
+  <div *ngIf="isProcessing">
+    <p>Processing... Please wait.</p>
+  </div>
+
+  <!-- Test Cases Table -->
+  <div *ngIf="testCases.length > 0">
+    <table>
+      <thead>
+        <tr>
+          <th>Test Case ID</th>
+          <th>Test Case Name</th>
+          <th>Pre-Condition</th>
+          <th>Actor(s)</th>
+          <th>Test Data</th>
+          <th>Step Description</th>
+          <th>Expected Result</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let testCase of editedTestCases; let i = index">
+          <td>
+            <input [(ngModel)]="editedTestCases[i]['Test_Case_ID']" />
+          </td>
+          <td>
+            <input [(ngModel)]="editedTestCases[i]['Test_Case_Name']" />
+          </td>
+          <td>
+            <input [(ngModel)]="editedTestCases[i]['Pre_Condition']" />
+          </td>
+          <td>
+            <input [(ngModel)]="editedTestCases[i]['Actor_s']" />
+          </td>
+          <td>
+            <input [(ngModel)]="editedTestCases[i]['Test_Data']" />
+          </td>
+          <td>
+            <input [(ngModel)]="editedTestCases[i]['Step_Description']" />
+          </td>
+          <td>
+            <input [(ngModel)]="editedTestCases[i]['Expected_Result']" />
+          </td>
+        </tr>
+      </tbody>
+    </table>
+
+    <!-- Download Button -->
+    <button (click)="onDownload()" [disabled]="isProcessing">
+      Download Excel
+    </button>
+  </div>
+</div>
