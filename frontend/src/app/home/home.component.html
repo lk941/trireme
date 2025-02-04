@@ -1,67 +1,42 @@
-<div class="container">
-    <div class="test">
-        <h1>Backend Connectivity Test</h1>
-        <p>Enter a message to send to the backend:</p>
-        
-        <form (ngSubmit)="onTestConnection($event)" #testForm="ngForm">
-          <div class="form-group">
-            <label for="messageInput">Message:</label>
-            <input
-              type="text"
-              id="messageInput"
-              name="message"
-              class="form-control"
-              [(ngModel)]="message"
-              required
-              placeholder="Type your message here"
-            />
-          </div>
-          <button
-            type="submit"
-            class="btn btn-primary"
-            [disabled]="!testForm.valid"
-          >
-            Send to Backend
-          </button>
-        </form>
-      
-    <h1>Document Management Portal</h1>
+<h1>Document Management Portal</h1>
+<section id="anonymization">
+  <h2>Anonymize/De-anonymize Documents</h2>
 
-    <!-- Anonymization Section -->
-    <section id="anonymization">
-        <h2>Anonymize/De-anonymize Documents</h2>
-        <p>Upload a document to anonymize or de-anonymize its content.</p>
-        <form id="anonymizeForm" (ngSubmit)="onAnonymizeSubmit($event)">
-            <input type="file" id="anonymizeInput" accept=".docx, .xlsx, .txt" required />
-            <br />
-            <button type="submit">Anonymize</button>
-        </form>
-        <p class="loading" id="anonymizeLoading">Processing... Please wait.</p>
-        <div class="preview" id="anonymizePreview" style="display: none;">
-            <h3>Preview:</h3>
-            <pre id="anonymizedContent"></pre>
-        </div>
-        <div class="download-link" id="anonymizeDownloadLink" style="display: none;">
-            <p>Download your processed file:</p>
-            <a id="anonymizeDownloadUrl" href="#" target="_blank">Download File</a>
-        </div>
-    </section>
+  <!-- Anonymize Form -->
+  <form (ngSubmit)="onAnonymizeSubmit($event)">
+    <div>
+      <label for="file">Upload File:</label>
+      <input type="file" (change)="onAnonymizeFileChange($event)" required />
+    </div>
+    
+    <div>
+      <label for="keywords">Confidential Keywords:</label>
+      <input type="text" id="keywords" [(ngModel)]="anonymizeKeywords" name="keywords" placeholder="Enter keywords separated by commas" required />
+    </div>
+    
+    <button type="submit" class="btn btn-primary">Anonymize</button>
+  </form>
 
-    <hr />
+  <div *ngIf="isProcessingAnonymize">Document Processing...</div>
+  <a *ngIf="downloadLinkAnonymize" [href]="downloadLinkAnonymize" download>Download Anonymized File</a>
+  <br>
 
-    <!-- Test Case Generation Section -->
-    <section id="test-case-generation">
-        <h2>Generate Test Scripts</h2>
-        <p>Upload a document to generate test scripts.</p>
-        <form id="testCaseForm">
-            <input type="file" id="testCaseInput" accept=".docx, .xlsx" required />
-            <br />
-            <button type="submit">Generate Test Scripts</button>
-        </form>
-        <p class="loading" id="testCaseLoading">Processing... Please wait.</p>
-        <div class="download-link" id="testCaseDownloadLink" style="display: none;">
-            <p>Download your generated test scripts:</p>
-            <a id="testCaseDownloadUrl" href="#" target="_blank">Download Test Scripts</a>
-        </div>
-    </section>
-</div>
+
+  <!-- De-anonymize Form --> 
+  <form (ngSubmit)="onDeAnonymizeSubmit($event)">
+    <input type="file" (change)="onDeAnonymizeFileChange($event)" required />
+    <button type="submit" class="btn btn-primary">De-anonymize</button>
+  </form>
+  <div *ngIf="isProcessingDeAnonymize">Document Processing...</div>
+  <a *ngIf="downloadLinkDeAnonymize" [href]="downloadLinkDeAnonymize" download>Download De-anonymized File</a>
+</section>
+
+<section id="test-case-generation">
+  <h2>Generate Test Scripts</h2>
+  <form (ngSubmit)="onTestCaseSubmit($event)">
+    <input type="file" (change)="onTestCaseFileChange($event)" required />
+    <button type="submit">Generate Test Scripts</button>
+  </form>
+  <div *ngIf="isProcessingTestCase">Document Processing...</div>
+  <a *ngIf="downloadLinkTestCase" [href]="downloadLinkTestCase" download>Download Test Scripts</a>
+</section>
