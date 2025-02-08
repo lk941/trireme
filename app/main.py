@@ -354,3 +354,62 @@ def template_excel(test_cases: List[TestCase], template_path: str, output_path: 
     excel_file_path = os.path.join(temp_dir, "test-scripts.xlsx")
     workbook.save(excel_file_path)
     return excel_file_path
+
+# Ranorex integration
+
+# Pydantic model to validate incoming request data
+class AutomationData(BaseModel):
+    suite: str
+    projectName: str
+    websiteUrl: str
+    browser: str
+    testCases: list
+
+# Helper function to call OpenAI API for generating Ranorex execution code
+async def generate_execution_code(test_cases: list) -> str:
+    response = openai.chat.completions.create(
+        model="gpt-4o-mini",
+        messages=[
+            {"role": "system", "content": "You are an assistant that generates Ranorex test automation scripts in C#."},
+            {"role": "user", "content": (
+                "Generate Ranorex-compatible C# test scripts based on the following test cases:\n\n"
+                f"{json.dumps(test_cases, indent=2)}\n\n"
+                "For each test case, generate a class with methods for each step. Include necessary Ranorex namespaces."
+            )}
+        ]
+    )
+    
+    execution_code = response.choices[0].message.content
+    return execution_code
+
+
+# Function to set up the Ranorex project structure and write generated scripts
+def setup_ranorex_project(data: AutomationData, execution_code: str):
+    base_path = os.path.join(os.path.dirname(__file__), "RanorexProjects", data.projectName)
+    modules_path = os.path.join(base_path, "Modules")
+    
+    # Create directories if they don't exist
+    os.makedirs(modules_path, exist_ok=True)
+    
+    # Create a basic Ranorex project file structure
+    with open(os.path.join(base_path, f"{data.projectName}.rxproj"), 'w') as project_file:
+        project_file.write(f"<Project name=\"{data.projectName}\" suite=\"{data.suite}\" browser=\"{data.browser}\" url=\"{data.websiteUrl}\"></Project>")
+
+    # Write the generated execution code to a C# file
+    with open(os.path.join(modules_path, f"{data.projectName}_Tests.cs"), 'w') as script_file:
+        script_file.write(execution_code)
+
+
+# FastAPI endpoint to handle automation setup
+@app.post("/setup-automation")
+async def setup_automation(automation_data: AutomationData):
+    try:
+        # Generate execution code from test cases
+        execution_code = await generate_execution_code(automation_data.testCases)
+        
+        # Setup the Ranorex project with generated files
+        setup_ranorex_project(automation_data, execution_code)
+
+        return {"message": "Ranorex project setup successfully!", "projectName": automation_data.projectName}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to set up Ranorex project: {str(e)}")

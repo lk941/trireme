@@ -17,23 +17,41 @@ export class AutomationSetupComponent {
   projectName: string = '';
   websiteUrl: string = '';
   selectedBrowser: string = 'chrome';
+  editedTestCases: any[] = [];
 
   constructor(private http: HttpClient, private router: Router) {}
+
+  ngOnInit(): void {
+    const navState = history.state;
+
+    if (navState && navState.editedTestCases) {
+      this.editedTestCases = navState.editedTestCases;
+    }
+  }
 
   generateRanorexSolution(): void {
     const automationData = {
       suite: this.selectedSuite,
       projectName: this.projectName,
       websiteUrl: this.websiteUrl,
-      browser: this.selectedBrowser
+      browser: this.selectedBrowser,
+      testCases: this.editedTestCases
     };
 
-  console.log('Generating Ranorex Solution with the following data:', automationData);
-}
+    console.log('Generating Ranorex Solution with the following data:', automationData);
+
+    // Send data to the backend to generate Ranorex project files
+    this.http.post('http://localhost:8000/setup-automation', automationData)
+      .subscribe(response => {
+        console.log('Ranorex project generated successfully:', response);
+      }, error => {
+        console.error('Error generating Ranorex project:', error);
+      });
+  }
 
   goBackToUpload() {
     this.router.navigate(['/preview'], {
-      state: { editedTestCases: history.state.editedTestCases, file: history.state.file}
+      state: { editedTestCases: this.editedTestCases, file: history.state.file}
     });
   }
 
