@@ -4,6 +4,7 @@ import { HttpClient } from '@angular/common/http';
 import { HttpClientModule } from '@angular/common/http';
 import { FormsModule } from '@angular/forms';
 import { CommonModule } from '@angular/common';
+import { Router } from '@angular/router';
 
 @Component({
   selector: 'app-preview',
@@ -18,7 +19,22 @@ export class PreviewComponent {
   file: File | null = null; // Stores the uploaded file
   isProcessing: boolean = false; // Tracks loading state
 
-  constructor(private http: HttpClient) {}
+  constructor(private http: HttpClient, private router: Router) {}
+
+  navigateToSetup() {
+    this.router.navigate(['/automation-setup'], {
+      state: { testData: this.editedTestCases, uploadedFile: this.file }
+    });
+  }
+
+  ngOnInit() {
+    const navState = history.state;
+
+    if (navState && navState.editedTestCases && navState.file) {
+      this.editedTestCases = navState.editedTestCases;
+      this.file = navState.file;
+    }
+  }
 
   // Handles file selection
   onFileChange(event: Event): void {

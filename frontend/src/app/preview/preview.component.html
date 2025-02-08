@@ -65,5 +65,9 @@
     <button (click)="onDownload()" [disabled]="isProcessing">
       Download Excel
     </button>
+    <!-- Redirect to test setup -->
+    <button (click)="navigateToSetup()" [disabled]="isProcessing" routerLinkActive="active">
+      Setup Test Automation
+    </button>
   </div>
 </div>

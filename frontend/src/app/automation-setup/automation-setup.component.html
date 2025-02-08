@@ -1,0 +1,54 @@
+<div class="automation-setup-container">
+    <h2>Setup Automation</h2>
+    <!-- Dropdown for Automation Suite Selection -->
+    <div class="suite-selection">
+      <label for="automationSuite">Select Automation Suite:</label>
+      <select id="automationSuite" [(ngModel)]="selectedSuite">
+        <option value="Ranorex">Ranorex</option>
+      </select>
+    </div>
+  
+    <!-- Form for Project Configuration -->
+    <form (ngSubmit)="generateRanorexSolution()" #automationForm="ngForm">
+      <!-- Project Name Input -->
+      <div class="form-group">
+        <label for="projectName">Project Name:</label>
+        <input 
+          type="text" 
+          id="projectName" 
+          name="projectName" 
+          [(ngModel)]="projectName" 
+          required 
+          placeholder="Enter project name">
+      </div>
+  
+      <!-- Website URL Input -->
+      <div class="form-group">
+        <label for="websiteUrl">Website URL:</label>
+        <input 
+          type="url" 
+          id="websiteUrl" 
+          name="websiteUrl" 
+          [(ngModel)]="websiteUrl" 
+          required 
+          placeholder="https://example.com">
+      </div>
+  
+      <!-- Browser Selection Dropdown -->
+      <div class="form-group">
+        <label for="browser">Select Browser:</label>
+        <select id="browser" name="browser" [(ngModel)]="selectedBrowser" required>
+          <option value="chrome">Chrome</option>
+          <option value="edge">Microsoft Edge</option>
+          <option value="firefox">Firefox</option>
+        </select>
+      </div>
+  
+      <!-- Action Buttons -->
+      <div class="form-actions">
+        <button type="button" (click)="goBackToUpload()" routerLinkActive="active">Go Back</button>
+        <button type="submit" [disabled]="!automationForm.form.valid">Generate Ranorex Solution</button>
+      </div>
+    </form>
+  </div>
+  
