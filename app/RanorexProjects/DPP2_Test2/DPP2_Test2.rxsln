@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Solution xmlns="http://schemas.ranorex.com/solution">
+  <Project>DPP2_Test2.rxproj</Project>
+  <Repository>DPP2_Test2.rxrep</Repository>
+  <TestSuite>DPP2_Test2.rxtst</TestSuite>
+</Solution>

@@ -1,5 +1,5 @@
 import { Component } from '@angular/core';
-import { Router } from '@angular/router';
+import { ActivatedRoute, Router } from '@angular/router';
 import { HttpClient } from '@angular/common/http';
 import { HttpClientModule } from '@angular/common/http';
 import { FormsModule } from '@angular/forms';
@@ -18,17 +18,26 @@ export class AutomationSetupComponent {
   websiteUrl: string = '';
   selectedBrowser: string = 'chrome';
   editedTestCases: any[] = [];
+  file: File | null = null;
 
-  constructor(private http: HttpClient, private router: Router) {}
+  constructor(private route: ActivatedRoute, private http: HttpClient, private router: Router) {}
 
-  ngOnInit(): void {
+  ngOnInit() {
     const navState = history.state;
-
-    if (navState && navState.editedTestCases) {
-      this.editedTestCases = navState.editedTestCases;
+  
+    if (navState) {
+      if (navState.editedTestCases) {
+        this.editedTestCases = navState.editedTestCases;
+      }
+      if (navState.file) {
+        this.file = navState.file;
+      } else if (navState.uploadedFile) {
+        this.file = navState.uploadedFile;
+      }
     }
   }
-
+  
+  
   generateRanorexSolution(): void {
     const automationData = {
       suite: this.selectedSuite,
@@ -50,8 +59,8 @@ export class AutomationSetupComponent {
   }
 
   goBackToUpload() {
-    this.router.navigate(['/preview'], {
-      state: { editedTestCases: this.editedTestCases, file: history.state.file}
+    this.router.navigate(['/preview/1'], {
+      state: { editedTestCases: this.editedTestCases, file: history.state.uploadedFile}
     });
   }
 

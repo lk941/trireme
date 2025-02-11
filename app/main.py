@@ -1,10 +1,9 @@
-from fastapi import BackgroundTasks, FastAPI, File, UploadFile, HTTPException, Form
+from fastapi import BackgroundTasks, FastAPI, File, UploadFile, HTTPException, Form, Depends
 from fastapi.responses import FileResponse, HTMLResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.middleware.cors import CORSMiddleware
-import httpx
 import shutil
-from typing import List, Dict, Optional, Union
+from typing import List, Dict, Optional, Union, Any
 from pydantic import BaseModel, Field
 import pandas as pd
 import json
@@ -16,9 +15,12 @@ from pathlib import Path
 import openpyxl
 from dotenv import load_dotenv
 import threading
+import xml.etree.ElementTree as ET
 import uvicorn
 from openpyxl import load_workbook
 import logging
+from sqlalchemy.orm import Session
+from datetime import datetime
 # from scripts.anonymise import process_file_for_anonymization, de_anonymize_with_generated_terms
 
 # Load environment variables
@@ -47,11 +49,15 @@ if CONFIG_MODE == "docker":
     STATIC_DIR = BASE_DIR / "templates"
     TEMPLATE_PATH = BASE_DIR / "testdata" / "DPP2_Template.xlsx"
     OUTPUT_PATH = BASE_DIR / "generateddata" / "updated_test_cases.xlsx"
+    from app.db.database import SessionLocal, engine, Base
+    from app.db.models import Project, TestScripts
     print(TEMPLATE_PATH)
 else:
     STATIC_DIR = BASE_DIR / "templates"
     TEMPLATE_PATH = BASE_DIR / "testdata" / "DPP2_Template.xlsx"
     OUTPUT_PATH = BASE_DIR / "generateddata" / "updated_test_cases.xlsx"
+    from db.database import SessionLocal, engine, Base
+    from db.models import Project, TestScripts
     
 print(f"Running in {CONFIG_MODE} mode")
 
@@ -69,9 +75,73 @@ app.add_middleware(
     allow_headers=["*"],  # Allow all headers
 )
 
-# @app.get("/")
-# async def root():
-#     return {"message": "Welcome to the API!"}
+# DB starts here
+
+Base.metadata.create_all(bind=engine)
+
+def get_db():
+    db = SessionLocal()
+    try:
+        yield db
+    finally:
+        db.close()
+
+# GET all projects without using schemas
+@app.get("/projects")
+def read_projects(db: Session = Depends(get_db)):
+    projects = db.query(Project).all()
+    return [{"id": p.id, "name": p.name, "description": p.description, "created_at": p.created_at, "updated_at": p.updated_at} for p in projects]
+
+# POST to create a new project without using schemas
+@app.post("/projects")
+def create_project(project: dict, db: Session = Depends(get_db)):
+    try:
+        new_project = Project(
+            name=project.get("name"),
+            description=project.get("description", ""),  # Default to empty string if not provided
+            created_at=datetime.utcnow(),
+            updated_at=datetime.utcnow()
+        )
+        db.add(new_project)
+        db.commit()
+        db.refresh(new_project)
+        return {
+            "id": new_project.id,
+            "name": new_project.name,
+            "description": new_project.description,
+            "created_at": new_project.created_at,
+            "updated_at": new_project.updated_at
+        }
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(status_code=500, detail=f"Error creating project: {e}")
+    
+
+class ProjectResponse(BaseModel):
+    id: int
+    name: str
+    description: str
+    created_at: datetime
+    updated_at: datetime
+
+    class Config:
+        orm_mode = True
+
+
+@app.get("/projects/{project_id}", response_model=ProjectResponse)
+def get_project(project_id: int, db: Session = Depends(get_db)):
+    project = db.query(Project).filter(Project.id == project_id).first()
+    
+    # Debugging output
+    if not project:
+        logging.error(f"Project with ID {project_id} not found in the database.")
+        raise HTTPException(status_code=404, detail="Project not found")
+    
+    logging.info(f"Project found: {project.name}")
+    return project
+
+
+# rest of app routes
 
 @app.get("/", response_class=HTMLResponse)
 async def get_ui():
@@ -94,78 +164,6 @@ def cleanup_files(temp_dir, file_path):
     if os.path.exists(temp_dir):
         os.rmdir(temp_dir)
 
-# @app.post("/anonymize")
-# async def anonymize(
-#     file: UploadFile = File(...),
-#     keywords: str = Form(...),
-#     background_tasks: BackgroundTasks = BackgroundTasks()
-# ):
-#     print("Anonymize backend triggered")
-#     temp_dir = tempfile.mkdtemp()  # Create temporary directory
-#     try:
-#         # Save the uploaded file
-#         file_path = os.path.join(temp_dir, file.filename)
-#         keywords_list = keywords.split(",")
-#         with open(file_path, "wb") as f:
-#             f.write(await file.read())
-
-#         # Process the file
-#         excel_file_path = process_file_for_anonymization(file_path, keywords_list)
-
-#         # Add cleanup task
-#         background_tasks.add_task(cleanup_files, temp_dir, file_path)
-
-#         # Return the file response
-#         return FileResponse(
-#             excel_file_path,
-#             headers={"Content-Disposition": 'attachment; filename="anonymized.xlsx"'},
-#             media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-#         )
-#     except Exception as e:
-#         # Cleanup in case of errors
-#         cleanup_files(temp_dir, file_path)
-#         raise e
-
-
-# @app.post("/deanonymize")
-# async def deanonymize(file: UploadFile = File(...), background_tasks: BackgroundTasks = BackgroundTasks()):
-#     print("Deanonymize backend triggered")
-#     temp_dir = tempfile.mkdtemp()  # Create a single temporary directory
-#     try:
-#         # Save uploaded file to temporary directory
-#         file_path = os.path.join(temp_dir, file.filename)
-#         with open(file_path, "wb") as f:
-#             f.write(await file.read())
-        
-#         # Use pandas.ExcelFile with context manager to ensure it closes
-#         with pd.ExcelFile(file_path) as input_excel:
-#             cover_page_df = input_excel.parse(sheet_name=0)
-#             test_case_sheet_df = input_excel.parse(sheet_name=1)
-
-#         # Process the data
-#         restored_cover_page_df = de_anonymize_with_generated_terms(cover_page_df)
-#         restored_test_case_sheet_df = de_anonymize_with_generated_terms(test_case_sheet_df)
-        
-#         # Save the deanonymized file
-#         deanonymized_excel_path = os.path.join(temp_dir, "deanonymized_file.xlsx")
-#         with pd.ExcelWriter(deanonymized_excel_path, engine='xlsxwriter') as writer:
-#             restored_cover_page_df.to_excel(writer, sheet_name="Cover Page", index=False)
-#             restored_test_case_sheet_df.to_excel(writer, sheet_name="Test Cases", index=False)
-
-#         print(f"Deanonymized Excel file saved to {deanonymized_excel_path}.")
-        
-#         # Schedule cleanup of temporary files
-#         background_tasks.add_task(cleanup_files, temp_dir, deanonymized_excel_path)
-
-#         # Return the file response with correct headers
-#         return FileResponse(
-#             deanonymized_excel_path,
-#             headers={"Content-Disposition": 'attachment; filename="deanonymized.xlsx"'},
-#             media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-#         )
-#     except Exception as e:
-#         print(f"Error: {e}")
-#         raise HTTPException(status_code=500, detail="An error occurred while processing the file.")
 
 def cleanup_temp_dir(temp_dir):
     try:
@@ -217,6 +215,7 @@ async def upload_file(file: UploadFile = File(...)):
         if os.path.exists(file_path):
             os.remove(file_path)
             
+
 @app.post("/generate-test-cases")
 async def generate_test_cases(file: UploadFile = File(...)):
     try:
@@ -250,21 +249,6 @@ class TestCase(BaseModel):
 class GenerateExcelRequest(BaseModel):
     test_cases: List[TestCase]
 
-# def template_excel(test_cases: List[TestCase], template_path: str, output_path: str) -> str:
-#     workbook = load_workbook(template_path)
-#     sheet = workbook.active
-
-#     for row, test_case in enumerate(test_cases, start=2):
-#         sheet.cell(row=row, column=1).value = test_case.Test_Case_ID
-#         sheet.cell(row=row, column=2).value = test_case.Test_Case_Name
-#         sheet.cell(row=row, column=3).value = test_case.Pre_Condition
-#         sheet.cell(row=row, column=4).value = test_case.Actor_s
-#         sheet.cell(row=row, column=5).value = str(test_case.Test_Data)
-#         sheet.cell(row=row, column=6).value = test_case.Step_Description
-#         sheet.cell(row=row, column=7).value = test_case.Expected_Result
-
-#     workbook.save(output_path)
-#     return output_path
 
 @app.post("/generate-excel")
 async def generate_excel(request: GenerateExcelRequest):
@@ -336,6 +320,7 @@ async def generate_test_scripts(document_text: str) -> list:
     except json.JSONDecodeError:
         raise ValueError("The API response is not valid JSON. Ensure the prompt enforces proper JSON formatting.")
 
+
 def template_excel(test_cases: List[TestCase], template_path: str, output_path: str) -> str:
     workbook = load_workbook(template_path)
     sheet = workbook.active
@@ -383,21 +368,74 @@ async def generate_execution_code(test_cases: list) -> str:
     return execution_code
 
 
-# Function to set up the Ranorex project structure and write generated scripts
 def setup_ranorex_project(data: AutomationData, execution_code: str):
+    # Define base paths
     base_path = os.path.join(os.path.dirname(__file__), "RanorexProjects", data.projectName)
     modules_path = os.path.join(base_path, "Modules")
-    
+    repository_path = os.path.join(base_path, "Repository")
+    test_suite_path = os.path.join(base_path, "TestSuite")
+    reports_path = os.path.join(base_path, "Reports")
+    binaries_path = os.path.join(base_path, "Binaries")
+
     # Create directories if they don't exist
     os.makedirs(modules_path, exist_ok=True)
-    
-    # Create a basic Ranorex project file structure
-    with open(os.path.join(base_path, f"{data.projectName}.rxproj"), 'w') as project_file:
-        project_file.write(f"<Project name=\"{data.projectName}\" suite=\"{data.suite}\" browser=\"{data.browser}\" url=\"{data.websiteUrl}\"></Project>")
+    os.makedirs(repository_path, exist_ok=True)
+    os.makedirs(test_suite_path, exist_ok=True)
+    os.makedirs(reports_path, exist_ok=True)
+    os.makedirs(binaries_path, exist_ok=True)
+
+    # Create Project.rxsln (Solution File)
+    solution_file_path = os.path.join(base_path, f"{data.projectName}.rxsln")
+    with open(solution_file_path, 'w') as solution_file:
+        solution_file.write(f"""<?xml version="1.0" encoding="utf-8"?>
+        <Solution xmlns="http://schemas.ranorex.com/solution">
+        <Project>{data.projectName}.rxproj</Project>
+        <Repository>{data.projectName}.rxrep</Repository>
+        <TestSuite>{data.projectName}.rxtst</TestSuite>
+        </Solution>""")
+
+    # Create Project.rxproj (Project File)
+    project_file_path = os.path.join(base_path, f"{data.projectName}.rxproj")
+    with open(project_file_path, 'w') as project_file:
+        project_file.write(f"""<?xml version="1.0" encoding="utf-8"?>
+        <Project name="{data.projectName}" browser="{data.browser}" url="{data.websiteUrl}">
+        <Modules>
+            <Module>{data.projectName}_Tests.cs</Module>
+        </Modules>
+        </Project>""")
+
+    # Create Project.rxrep (Repository File)
+    repository_file_path = os.path.join(repository_path, f"{data.projectName}.rxrep")
+    repository_root = ET.Element("Repository")
+    for element in data.ui_elements:  # Assuming data.ui_elements is a list of UI elements
+        ui_element = ET.SubElement(repository_root, "Element", attrib={
+            "name": element["name"],
+            "id": element["id"],
+            "xpath": element["xpath"]
+        })
+    repository_tree = ET.ElementTree(repository_root)
+    repository_tree.write(repository_file_path, encoding="utf-8", xml_declaration=True)
+
+    # Create TestSuite.rxtst (Test Suite File)
+    test_suite_file_path = os.path.join(test_suite_path, f"{data.projectName}.rxtst")
+    test_suite_root = ET.Element("TestSuite", attrib={"name": data.suite})
+    for test_case in data.test_cases:  # Assuming data.test_cases is a list of test cases
+        test_case_element = ET.SubElement(test_suite_root, "TestCase", attrib={"name": test_case["name"]})
+        for step in test_case["steps"]:
+            step_element = ET.SubElement(test_case_element, "Step", attrib={
+                "action": step["action"],
+                "element": step["element"],
+                "value": step["value"]
+            })
+    test_suite_tree = ET.ElementTree(test_suite_root)
+    test_suite_tree.write(test_suite_file_path, encoding="utf-8", xml_declaration=True)
 
     # Write the generated execution code to a C# file
-    with open(os.path.join(modules_path, f"{data.projectName}_Tests.cs"), 'w') as script_file:
+    execution_code_path = os.path.join(modules_path, f"{data.projectName}_Tests.cs")
+    with open(execution_code_path, 'w') as script_file:
         script_file.write(execution_code)
+
+    print(f"Ranorex project '{data.projectName}' has been successfully created at '{base_path}'.")
 
 
 # FastAPI endpoint to handle automation setup

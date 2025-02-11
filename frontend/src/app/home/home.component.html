@@ -1,42 +1,87 @@
-<h1>Document Management Portal</h1>
+<h1>QA Automation Portal</h1>
 <section id="anonymization">
-  <h2>Anonymize/De-anonymize Documents</h2>
-
-  <!-- Anonymize Form -->
-  <form (ngSubmit)="onAnonymizeSubmit($event)">
-    <div>
-      <label for="file">Upload File:</label>
-      <input type="file" (change)="onAnonymizeFileChange($event)" required />
+  <h2>All Projects</h2>
+  <div class="projects-container">
+    <div class="project-card" *ngFor="let project of projects" (click)="navigateToProject(project.id)">
+      <img src="assets/icons/folder.png" alt="Project Folder">
+      <p>{{ project.name }}</p>
     </div>
-    
-    <div>
-      <label for="keywords">Confidential Keywords:</label>
-      <input type="text" id="keywords" [(ngModel)]="anonymizeKeywords" name="keywords" placeholder="Enter keywords separated by commas" required />
-    </div>
-    
-    <button type="submit" class="btn btn-primary">Anonymize</button>
-  </form>
-
-  <div *ngIf="isProcessingAnonymize">Document Processing...</div>
-  <a *ngIf="downloadLinkAnonymize" [href]="downloadLinkAnonymize" download>Download Anonymized File</a>
-  <br>
-
-
-  <!-- De-anonymize Form --> 
-  <form (ngSubmit)="onDeAnonymizeSubmit($event)">
-    <input type="file" (change)="onDeAnonymizeFileChange($event)" required />
-    <button type="submit" class="btn btn-primary">De-anonymize</button>
-  </form>
-  <div *ngIf="isProcessingDeAnonymize">Document Processing...</div>
-  <a *ngIf="downloadLinkDeAnonymize" [href]="downloadLinkDeAnonymize" download>Download De-anonymized File</a>
+  </div>
+  <button (click)="openModal()">Create New Project</button>
 </section>
 
-<section id="test-case-generation">
-  <h2>Generate Test Scripts</h2>
-  <form (ngSubmit)="onTestCaseSubmit($event)">
-    <input type="file" (change)="onTestCaseFileChange($event)" required />
-    <button type="submit">Generate Test Scripts</button>
-  </form>
-  <div *ngIf="isProcessingTestCase">Document Processing...</div>
-  <a *ngIf="downloadLinkTestCase" [href]="downloadLinkTestCase" download>Download Test Scripts</a>
-</section>
+<div *ngIf="isModalOpen" class="modal">
+  <div class="modal-content">
+    <span class="close" (click)="closeModal()">&times;</span>
+    <h2>Create New Project</h2>
+    <input type="text" [(ngModel)]="newProjectName" placeholder="Enter project name">
+    <button (click)="createProject()">Submit</button>
+  </div>
+</div>
+
+<style>
+  .projects-container {
+    display: flex;
+    gap: 20px;
+    flex-wrap: wrap;
+  }
+
+  .project-card {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    cursor: pointer;
+    border: 1px solid #ddd;
+    padding: 10px 20px;
+    border-radius: 8px;
+    transition: transform 0.2s;
+  }
+
+  .project-card img {
+    width: 60px;
+    height: 60px;
+  }
+
+  .project-card p {
+    margin-top: 10px;
+    font-weight: bold;
+  }
+
+  .project-card:hover {
+    transform: scale(1.05);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+  }
+
+  .modal {
+    display: block;
+    position: fixed;
+    z-index: 1;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    overflow: auto;
+    background-color: rgba(0,0,0,0.4);
+  }
+  
+  .modal-content {
+    background-color: #fefefe;
+    margin: 15% auto;
+    padding: 20px;
+    border: 1px solid #888;
+    width: 30%;
+  }
+
+  .close {
+    color: #aaa;
+    float: right;
+    font-size: 28px;
+    font-weight: bold;
+  }
+
+  .close:hover, .close:focus {
+    color: black;
+    text-decoration: none;
+    cursor: pointer;
+  }
+</style>

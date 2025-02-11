@@ -6,7 +6,7 @@ import { AutomationSetupComponent } from './automation-setup/automation-setup.co
 
 export const routes: Routes = [
     { path: '', component: HomeComponent }, // Default route to HomeComponent
-    { path: 'preview', component: PreviewComponent },
-    { path: 'automation-setup', component: AutomationSetupComponent },
+    { path: 'preview/:id', component: PreviewComponent },
+    { path: 'automation-setup/:id', component: AutomationSetupComponent },
     { path: '**', redirectTo: '' }, // Redirect unknown routes to home
 ];

@@ -1,10 +1,9 @@
-import { Component } from '@angular/core';
-import { ApiService } from '../api.service';
+import { Component, OnInit } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { HttpClientModule } from '@angular/common/http';
 import { FormsModule } from '@angular/forms';
 import { CommonModule } from '@angular/common';
-import { Router } from '@angular/router';
+import { ActivatedRoute, Router } from '@angular/router';
 
 @Component({
   selector: 'app-preview',
@@ -13,27 +12,46 @@ import { Router } from '@angular/router';
   templateUrl: './preview.component.html',
   styleUrl: './preview.component.css'
 })
-export class PreviewComponent {
+export class PreviewComponent implements OnInit{
   testCases: any[] = []; // Stores the generated test cases
   editedTestCases: any[] = []; // Stores the edited test cases
   file: File | null = null; // Stores the uploaded file
   isProcessing: boolean = false; // Tracks loading state
+  isDataLoaded: boolean = false; // Tracks if data is loaded for table display
+  projectId: number | null = null;
+  projectName: string = '';
 
-  constructor(private http: HttpClient, private router: Router) {}
+  constructor(private route: ActivatedRoute, private http: HttpClient, private router: Router) {}
 
-  navigateToSetup() {
-    this.router.navigate(['/automation-setup'], {
+  navigateToSetup(projectId: number) {
+    this.router.navigate(['/automation-setup', projectId], {
       state: { testData: this.editedTestCases, uploadedFile: this.file }
     });
   }
 
   ngOnInit() {
+    this.projectId = Number(this.route.snapshot.paramMap.get('id'));
+    this.loadProjectDetails();
+
     const navState = history.state;
 
-    if (navState && navState.editedTestCases && navState.file) {
-      this.editedTestCases = navState.editedTestCases;
-      this.file = navState.file;
+    if (navState) {
+      if (navState.editedTestCases && navState.editedTestCases.length > 0) {
+        this.editedTestCases = navState.editedTestCases;
+        this.isDataLoaded = true;  // Set flag to show table
+      }
+      if (navState.file) {
+        this.file = navState.file;
+      } else if (navState.uploadedFile) {
+        this.file = navState.uploadedFile;
+      }
     }
+  }
+
+  loadProjectDetails(): void {
+    this.http.get<any>(`http://localhost:8000/projects/${this.projectId}`).subscribe(project => {
+      this.projectName = project.name;
+    });
   }
 
   // Handles file selection
@@ -58,6 +76,7 @@ export class PreviewComponent {
           this.isProcessing = false;
           this.testCases = response.test_cases;
           this.editedTestCases = [...this.testCases]; // Copy for editing
+          this.isDataLoaded = true;  // Set flag to show table after generation
         },
         (error) => {
           this.isProcessing = false;
@@ -66,19 +85,13 @@ export class PreviewComponent {
       );
   }
 
-  // // Handles editing of a test case
-  // onEdit(testCase: any, index: number): void {
-  //   this.editedTestCases[index] = testCase;
-  // }
-
-
   onDownload(): void {
     this.isProcessing = true;
-  
+
     const payload = { test_cases: this.editedTestCases };
-  
+
     console.log('Payload being sent:', JSON.stringify(payload, null, 2));  // Debug payload structure
-  
+
     this.http.post('http://127.0.0.1:8000/generate-excel', payload, { responseType: 'blob' })
       .subscribe(
         (response: Blob) => {
@@ -98,5 +111,4 @@ export class PreviewComponent {
         }
       );
   }
-  
 }
