@@ -58,9 +58,15 @@
           <td>
             <textarea [(ngModel)]="editedTestCases[i]['Expected_Result']"></textarea>
           </td>
+          <td>
+            <button (click)="deleteRow(i)">Delete</button>
+          </td>
         </tr>
       </tbody>
     </table>
+
+    <!-- Add Row Button -->
+    <button (click)="addRow()">Add Row</button>
 
     <!-- Download Button -->
     <button (click)="onDownload()" [disabled]="isProcessing">

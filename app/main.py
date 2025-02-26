@@ -34,6 +34,27 @@ load_dotenv()
 # step 4 create functions to retrieve and craft better prompt
 # step 5 link to AI and test
 
+# Capstone (before Shanghai):
+# -> UI changes/functions
+# Allow User to add or delete rows
+# Make Test Data visible and editable
+# Store modules per project folder
+# Display document/module name e.g SCR_001
+# Add column to indicate test type
+# Create ability to save test cases after they have been generated
+# Refine default template to include 1. dynamically naming after project + module + document
+# Add option to create versions of end to end test cases (modules combined to one, add all mandatory test specs + targeted tests)
+# DB
+# Project
+# -> Module -> Mandatory Suite + SCR changes -> Test Cases
+# -> Mandatory End-to-End Suites
+ 
+# Data Needed:
+# Full flow GPN basic test flow + Cleaned SCR
+# -> check for whether SCR affects mandatory TC
+# -> if SCR, generate comparison with mandatory TC, let user edit and save to DB. Changes are categorised as targeted
+ 
+
 
 # Initialize OpenAI API client
 openai = OpenAI(api_key=os.environ.get("OPENAI_API_KEY"))  # Replace with your API key
@@ -236,15 +257,23 @@ async def generate_test_cases(file: UploadFile = File(...)):
             os.remove(file_path)
             
 
+# class TestCase(BaseModel):
+#     Test_Case_ID: str
+#     Test_Case_Name: str
+#     Pre_Condition: str
+#     Actor_s: str
+#     Test_Data: Optional[Dict[str, Union[str, List[str]]]] = None 
+#     Step_Description: List[str]
+#     Expected_Result: str
+
 class TestCase(BaseModel):
     Test_Case_ID: str
     Test_Case_Name: str
     Pre_Condition: str
     Actor_s: str
-    Test_Data: Optional[Dict[str, Union[str, List[str]]]] = None 
-    Step_Description: List[str]
+    Test_Data: str
+    Step_Description: str
     Expected_Result: str
-
 
 class GenerateExcelRequest(BaseModel):
     test_cases: List[TestCase]
@@ -299,7 +328,7 @@ async def generate_test_scripts(document_text: str) -> list:
             "Limit your response to only the test script contents in JSON format. "
             "Return the test cases as a JSON array (list) with each test case containing the following attributes: "
             "Test_Case_ID, Test_Case_Name, Pre_Condition, Actor_s, Test_Data, Step_Description, and Expected_Result. "
-            "Do not include any additional text, just the JSON array in text."
+            "Do not include any additional text, just the JSON array in text. Every attribute should be a string."
             )}
         ]
     )
@@ -331,7 +360,7 @@ def template_excel(test_cases: List[TestCase], template_path: str, output_path: 
         sheet.cell(row=row, column=3).value = test_case.Pre_Condition
         sheet.cell(row=row, column=4).value = test_case.Actor_s
         sheet.cell(row=row, column=5).value = str(test_case.Test_Data)
-        sheet.cell(row=row, column=6).value = "\n".join(test_case.Step_Description)  # Join list into a string
+        sheet.cell(row=row, column=6).value = test_case.Step_Description  # Join list into a string
         sheet.cell(row=row, column=7).value = test_case.Expected_Result
     
     # Save the updated workbook to the output path

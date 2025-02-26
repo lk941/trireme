@@ -60,6 +60,24 @@ export class PreviewComponent implements OnInit{
     this.file = target.files?.[0] || null;
   }
 
+  addRow(): void {
+    const newTestCase = {
+      Test_Case_ID: '',
+      Test_Case_Name: '',
+      Pre_Condition: '',
+      Actor_s: '',
+      Test_Data: '',
+      Step_Description: '',
+      Expected_Result: ''
+    };
+    this.editedTestCases.push(newTestCase);
+  }
+  
+  deleteRow(index: number): void {
+    this.editedTestCases.splice(index, 1);
+  }
+  
+
   // Submits the file to generate test cases
   onSubmit(event: Event): void {
     event.preventDefault();
