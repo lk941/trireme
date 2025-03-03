@@ -26,12 +26,17 @@ export class ProjectPageComponent implements OnInit{
   isModalOpen: boolean = false;
   isModalMandOpen: boolean = false;
   breadcrumb = { projectName: '', module: '' };
+  isEditing: boolean = false;
 
   constructor(private navbarService: NavbarService, private route: ActivatedRoute, private http: HttpClient, private router: Router) {}
 
   ngOnInit(): void {
-    this.loadModules();
-    this.projectId = Number(this.route.snapshot.paramMap.get('id'));
+    
+    this.route.paramMap.subscribe(params => {
+      this.projectId = Number(params.get('id')); 
+      console.log(this.projectId);
+    });
+
     this.loadProjectDetails();
 
     const navState = history.state;
@@ -40,21 +45,22 @@ export class ProjectPageComponent implements OnInit{
       this.navbarService.breadcrumb$.subscribe((breadcrumb) => {
         this.breadcrumb = breadcrumb;
       });
-      
-      if (navState.editedTestCases && navState.editedTestCases.length > 0) {
-        this.editedTestCases = navState.editedTestCases;
-        this.isDataLoaded = true;  // Set flag to show table
-      }
-      if (navState.file) {
-        this.file = navState.file;
-      } else if (navState.uploadedFile) {
-        this.file = navState.uploadedFile;
-      }
     }
+
+    this.loadModules();
+  }
+
+  startEditing(): void {
+    this.isEditing = true;
+  }
+
+  saveDescription(): void {
+    this.isEditing = false;
   }
 
   loadModules(): void {
-    this.http.get<any[]>('http://localhost:8000/modules').subscribe(data => {
+    console.log(this.projectId)
+    this.http.get<any[]>(`http://localhost:8000/modules/${this.projectId}`).subscribe(data => {
       this.modules = data;
     });
   }

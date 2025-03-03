@@ -4,7 +4,7 @@
     justify-content: space-between;
     background-color: #fff;
     color: #0e1f3b;
-    padding: 10px 10px;
+    padding-left: 10px;
   }
   
   .navbar-left {
@@ -28,7 +28,7 @@
     text-align: left;
     font-size: 14px;
     margin-left: 25px;
-    color: #1b2d49;
+    color: #3c4758;
   }
   
   .navbar-right {

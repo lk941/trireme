@@ -1,0 +1,31 @@
+.description-container {
+    margin-bottom: 20px;
+  }
+  
+  textarea {
+    width: 100%;
+    height: 100px;
+    padding: 10px;
+    border: 1px solid #ccc;
+    background-color: white;
+    resize: vertical;
+    box-sizing: border-box;
+  }
+  
+  textarea.editable {
+    background-color: #f0f0f0;
+  }
+  
+  button {
+    margin-top: 20px;
+    margin-right:10px;
+    padding: 10px 20px;
+    background-color: #0e1f3b;
+    color: white;
+    border: none;
+    cursor: pointer;
+}
+
+button:hover {
+    background-color: #283e61;
+}

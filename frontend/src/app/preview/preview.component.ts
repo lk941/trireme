@@ -21,6 +21,7 @@ export class PreviewComponent implements OnInit{
   isDataLoaded: boolean = false; // Tracks if data is loaded for table display
   projectId: number | null = null;
   breadcrumb = { projectName: '', module: '' };
+  moduleTC: String | null = null; // Returns either name of file or no existing module test cases
 
   constructor(private navbarService: NavbarService, private route: ActivatedRoute, private http: HttpClient, private router: Router) {}
 

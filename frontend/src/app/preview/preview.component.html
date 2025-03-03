@@ -1,5 +1,19 @@
 <div>
   <h1>{{ breadcrumb.projectName }}</h1>
+
+  <p> Module Test Cases (standard): </p>
+  <div *ngIf="moduleTC">
+    <div class="projects-container">
+
+    </div>
+  </div>
+  <div *ngIf="moduleTC == null">
+    <p> This module has no existing test scripts</p>
+    <div class="projects-container">
+      <p> + Add Module Test Scripts (Mandatory Steps) </p>
+    </div>
+  </div>
+
   <h2>Preview and Edit Test Cases</h2>
 
   <!-- File Upload -->

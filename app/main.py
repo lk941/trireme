@@ -26,21 +26,14 @@ from datetime import datetime
 # Load environment variables
 load_dotenv()
 
-# step 1 find a way to make the excel anonymisation work (/)
-# step 2 make sure excel to test script by gpt works (/)
-
-# Freedom sprint: Finish UI pages on wednesday, and streamline anonymisation -> generation -> De-anonymisation
-# step 3 do up database, make sure db upload and storage works (/)
-# step 4 create functions to retrieve and craft better prompt (/)
-# step 5 link to AI and test (/)
 
 # Capstone (before Shanghai):
 # -> UI changes/functions
-# Allow User to add or delete rows (/ only delete)
-# Make Test Data visible and editable
+# Allow User to add or delete rows (/)
+# Make Test Data visible and editable (/)
 # Store modules per project folder (/)
 # Display document/module name e.g SCR_001
-# Add column to indicate test type
+# Add column to indicate test type (/)
 # Create ability to save test cases after they have been generated
 # Refine default template to include 1. dynamically naming after project + module + document
 # Add option to create versions of end to end test cases (modules combined to one, add all mandatory test specs + targeted tests)
@@ -149,17 +142,6 @@ def create_project(project: ProjectCreate, db: Session = Depends(get_db)):
         raise HTTPException(status_code=500, detail="Error creating project")
     
 
-class ProjectResponse(BaseModel):
-    id: int
-    name: str
-    description: str
-    created_at: datetime
-    updated_at: datetime
-
-    class Config:
-        orm_mode = True
-
-
 @app.get("/projects/{project_id}", response_model=ProjectResponse)
 def get_project(project_id: int, db: Session = Depends(get_db)):
     project = db.query(Project).filter(Project.id == project_id).first()
@@ -197,6 +179,19 @@ class ModuleResponse(BaseModel):
 def read_modules(db: Session = Depends(get_db)):
     modules = db.query(Module).all()
     return modules
+
+### GET modules by `project_id` ###
+@app.get("/modules/{project_id}", response_model=list[ModuleResponse])
+def get_module_by_project_id(project_id: int, db: Session = Depends(get_db)):
+    module = db.query(Module).filter(
+        Module.project_id == project_id,
+    ).all()
+
+    if not module:
+        logging.error(f"project {project_id} not found.")
+        raise HTTPException(status_code=404, detail="Unknown module in the specified project")
+    
+    return module
 
 
 ### GET a module by its global `id` ###
