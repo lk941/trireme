@@ -7,8 +7,8 @@ import { AutomationSetupComponent } from './automation-setup/automation-setup.co
 
 export const routes: Routes = [
     { path: '', component: HomeComponent }, // Default route to HomeComponent
-    { path: 'project-page/:id', component: ProjectPageComponent }, // Default route to HomeComponent
-    { path: 'preview/:id/:id', component: PreviewComponent },
-    { path: 'automation-setup/:id/:id', component: AutomationSetupComponent },
+    { path: 'project-page/:projectName/:id', component: ProjectPageComponent }, // Default route to HomeComponent
+    { path: 'preview/:projectName/:id/:moduleName/:id', component: PreviewComponent },
+    { path: 'automation-setup/:projectName/:id/:moduleName/:id', component: AutomationSetupComponent },
     { path: '**', redirectTo: '' }, // Redirect unknown routes to home
 ];

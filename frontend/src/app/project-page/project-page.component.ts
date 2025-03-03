@@ -4,6 +4,7 @@ import { HttpClientModule } from '@angular/common/http';
 import { FormsModule } from '@angular/forms';
 import { CommonModule } from '@angular/common';
 import { ActivatedRoute, Router } from '@angular/router';
+import { NavbarService } from '../services/navbar.service';
 
 @Component({
   selector: 'app-preview',
@@ -24,8 +25,9 @@ export class ProjectPageComponent implements OnInit{
   newModuleName: string = '';
   isModalOpen: boolean = false;
   isModalMandOpen: boolean = false;
+  breadcrumb = { projectName: '', module: '' };
 
-  constructor(private route: ActivatedRoute, private http: HttpClient, private router: Router) {}
+  constructor(private navbarService: NavbarService, private route: ActivatedRoute, private http: HttpClient, private router: Router) {}
 
   ngOnInit(): void {
     this.loadModules();
@@ -35,6 +37,10 @@ export class ProjectPageComponent implements OnInit{
     const navState = history.state;
 
     if (navState) {
+      this.navbarService.breadcrumb$.subscribe((breadcrumb) => {
+        this.breadcrumb = breadcrumb;
+      });
+      
       if (navState.editedTestCases && navState.editedTestCases.length > 0) {
         this.editedTestCases = navState.editedTestCases;
         this.isDataLoaded = true;  // Set flag to show table
@@ -80,8 +86,8 @@ export class ProjectPageComponent implements OnInit{
     }
   }
 
-  navigateToProject(projectId: number, projectSpecificId: number): void {
-    this.router.navigate(['/preview', projectId, projectSpecificId]);
+  navigateToProject(projectId: number, moduleName: String, projectSpecificId: number): void {
+    this.router.navigate(['/preview', this.breadcrumb.projectName , projectId, moduleName, projectSpecificId]);
   }
 
   navigateToSetup(projectId: number) {

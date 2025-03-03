@@ -38,7 +38,7 @@ load_dotenv()
 # -> UI changes/functions
 # Allow User to add or delete rows (/ only delete)
 # Make Test Data visible and editable
-# Store modules per project folder
+# Store modules per project folder (/)
 # Display document/module name e.g SCR_001
 # Add column to indicate test type
 # Create ability to save test cases after they have been generated
@@ -46,7 +46,7 @@ load_dotenv()
 # Add option to create versions of end to end test cases (modules combined to one, add all mandatory test specs + targeted tests)
 # DB
 # Project
-# -> Module -> Mandatory Suite + SCR changes -> Test Cases
+# -> Module -> Mandatory Suite + SCR changes -> Test Cases (done)
 # -> Mandatory End-to-End Suites
  
 # Data Needed:
@@ -128,7 +128,7 @@ def read_projects(db: Session = Depends(get_db)):
     return projects
 
 
-### 🔹 Fixed: POST `/projects` ###
+### Fixed: POST `/projects` ###
 @app.post("/projects", response_model=ProjectResponse)
 def create_project(project: ProjectCreate, db: Session = Depends(get_db)):
     try:
@@ -192,14 +192,14 @@ class ModuleResponse(BaseModel):
         orm_mode = True
 
 
-### 🔹 GET all modules ###
+### GET all modules ###
 @app.get("/modules", response_model=list[ModuleResponse])
 def read_modules(db: Session = Depends(get_db)):
     modules = db.query(Module).all()
     return modules
 
 
-### 🔹 GET a module by its global `id` ###
+### GET a module by its global `id` ###
 @app.get("/modules/{module_id}", response_model=ModuleResponse)
 def get_module(module_id: int, db: Session = Depends(get_db)):
     module = db.query(Module).filter(Module.id == module_id).first()
@@ -211,7 +211,7 @@ def get_module(module_id: int, db: Session = Depends(get_db)):
     return module
 
 
-### 🔹 GET a module by `project_id` & `project_specific_id` ###
+### GET a module by `project_id` & `project_specific_id` ###
 @app.get("/modules/{project_id}/{project_specific_id}", response_model=ModuleResponse)
 def get_module_by_project_specific_id(project_id: int, project_specific_id: int, db: Session = Depends(get_db)):
     module = db.query(Module).filter(
@@ -226,7 +226,7 @@ def get_module_by_project_specific_id(project_id: int, project_specific_id: int,
     return module
 
 
-### 🔹 POST: Create a new module (auto-generates `project_specific_id`) ###
+### POST: Create a new module (auto-generates `project_specific_id`) ###
 @app.post("/modules", response_model=ModuleResponse)
 def create_module(module: ModuleCreate, db: Session = Depends(get_db)):
     try:
@@ -366,6 +366,7 @@ async def generate_test_cases(file: UploadFile = File(...)):
 class TestCase(BaseModel):
     Test_Case_ID: str
     Test_Case_Name: str
+    Test_Case_Type: str
     Pre_Condition: str
     Actor_s: str
     Test_Data: str
@@ -424,7 +425,8 @@ async def generate_test_scripts(document_text: str) -> list:
             f"Generate test scripts for the following document:\n\n{document_text}. "
             "Limit your response to only the test script contents in JSON format. "
             "Return the test cases as a JSON array (list) with each test case containing the following attributes: "
-            "Test_Case_ID, Test_Case_Name, Pre_Condition, Actor_s, Test_Data, Step_Description, and Expected_Result. "
+            "Test_Case_ID, Test_Case_Name, Test_Case_Type, Pre_Condition, Actor_s, Test_Data, Step_Description, and Expected_Result. "
+            "Test_Case_Type values are limited to: Mandatory, SCR Change, Boundary Test, Edge Case. For each test case, select the most appropriate Test_Case_Type value."
             "Do not include any additional text, just the JSON array in text. Every attribute should be a string."
             )}
         ]

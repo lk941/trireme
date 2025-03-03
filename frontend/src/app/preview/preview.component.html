@@ -1,5 +1,5 @@
 <div>
-  <h1>{{ projectName }}</h1>
+  <h1>{{ breadcrumb.projectName }}</h1>
   <h2>Preview and Edit Test Cases</h2>
 
   <!-- File Upload -->
@@ -28,6 +28,7 @@
         <tr>
           <th>Test Case ID</th>
           <th>Test Case Name</th>
+          <th>Test Case Type</th>
           <th>Pre-Condition</th>
           <th>Actor(s)</th>
           <th>Test Data</th>
@@ -42,6 +43,9 @@
           </td>
           <td>
             <textarea [(ngModel)]="editedTestCases[i]['Test_Case_Name']"></textarea>
+          </td>
+          <td>
+            <textarea [(ngModel)]="editedTestCases[i]['Test_Case_Type']"></textarea>
           </td>
           <td>
             <textarea [(ngModel)]="editedTestCases[i]['Pre_Condition']"></textarea>

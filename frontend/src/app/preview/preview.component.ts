@@ -4,6 +4,7 @@ import { HttpClientModule } from '@angular/common/http';
 import { FormsModule } from '@angular/forms';
 import { CommonModule } from '@angular/common';
 import { ActivatedRoute, Router } from '@angular/router';
+import { NavbarService } from '../services/navbar.service';
 
 @Component({
   selector: 'app-preview',
@@ -19,9 +20,9 @@ export class PreviewComponent implements OnInit{
   isProcessing: boolean = false; // Tracks loading state
   isDataLoaded: boolean = false; // Tracks if data is loaded for table display
   projectId: number | null = null;
-  projectName: string = '';
+  breadcrumb = { projectName: '', module: '' };
 
-  constructor(private route: ActivatedRoute, private http: HttpClient, private router: Router) {}
+  constructor(private navbarService: NavbarService, private route: ActivatedRoute, private http: HttpClient, private router: Router) {}
 
   navigateToSetup(projectId: number) {
     this.router.navigate(['/automation-setup', projectId], {
@@ -31,11 +32,14 @@ export class PreviewComponent implements OnInit{
 
   ngOnInit() {
     this.projectId = Number(this.route.snapshot.paramMap.get('projectId'));
-    this.loadProjectDetails();
 
     const navState = history.state;
 
     if (navState) {
+      this.navbarService.breadcrumb$.subscribe((breadcrumb) => {
+        this.breadcrumb = breadcrumb;
+      });
+
       if (navState.editedTestCases && navState.editedTestCases.length > 0) {
         this.editedTestCases = navState.editedTestCases;
         this.isDataLoaded = true;  // Set flag to show table
@@ -48,11 +52,6 @@ export class PreviewComponent implements OnInit{
     }
   }
 
-  loadProjectDetails(): void {
-    this.http.get<any>(`http://localhost:8000/projects/${this.projectId}`).subscribe(project => {
-      this.projectName = project.name;
-    });
-  }
 
   // Handles file selection
   onFileChange(event: Event): void {
@@ -64,6 +63,7 @@ export class PreviewComponent implements OnInit{
     const newTestCase = {
       Test_Case_ID: '',
       Test_Case_Name: '',
+      Test_Case_Type: '',
       Pre_Condition: '',
       Actor_s: '',
       Test_Data: '',

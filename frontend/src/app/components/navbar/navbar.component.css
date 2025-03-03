@@ -1,0 +1,45 @@
+.navbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background-color: #fff;
+    color: #0e1f3b;
+    padding: 10px 10px;
+  }
+  
+  .navbar-left {
+    display: flex;
+    align-items: center;
+    cursor: pointer;
+  }
+  
+  .logo {
+    height: 40px;
+    margin-right: 10px;
+  }
+  
+  .app-name {
+    font-size: 17px;
+    font-weight: light;
+  }
+  
+  .breadcrumb {
+    flex-grow: 1;
+    text-align: left;
+    font-size: 14px;
+    margin-left: 25px;
+    color: #1b2d49;
+  }
+  
+  .navbar-right {
+    display: flex;
+    align-items: center;
+  }
+  
+  input {
+    padding: 5px;
+    width: 200px;
+    border-radius: 5px;
+    border: none;
+  }
+  

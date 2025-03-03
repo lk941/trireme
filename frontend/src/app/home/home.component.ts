@@ -49,7 +49,7 @@ export class HomeComponent implements OnInit {
     }
   }
 
-  navigateToProject(projectId: number): void {
-    this.router.navigate(['/project-page', projectId]);
+  navigateToProject(projectName: String, projectId: number): void {
+    this.router.navigate(['/project-page', projectName, projectId]);
   }
 }

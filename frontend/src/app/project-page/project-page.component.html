@@ -2,7 +2,7 @@
 <section id="modules">
   <h2>Modules</h2>
   <div class="projects-container">
-    <div class="project-card" *ngFor="let module of modules" (click)="navigateToProject(module.project_id, module.project_specific_id)">
+    <div class="project-card" *ngFor="let module of modules" (click)="navigateToProject(module.project_id, module.name, module.project_specific_id)">
       <img src="assets/icons/folder.png" alt="Project Folder">
       <p>{{ module.name }}</p>
     </div>

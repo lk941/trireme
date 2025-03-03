@@ -2,7 +2,7 @@
 <section id="anonymization">
   <h2>All Projects</h2>
   <div class="projects-container">
-    <div class="project-card" *ngFor="let project of projects" (click)="navigateToProject(project.id)">
+    <div class="project-card" *ngFor="let project of projects" (click)="navigateToProject(project.name, project.id)">
       <img src="assets/icons/folder.png" alt="Project Folder">
       <p>{{ project.name }}</p>
     </div>
