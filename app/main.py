@@ -30,13 +30,13 @@ load_dotenv()
 # step 2 make sure excel to test script by gpt works (/)
 
 # Freedom sprint: Finish UI pages on wednesday, and streamline anonymisation -> generation -> De-anonymisation
-# step 3 do up database, make sure db upload and storage works
-# step 4 create functions to retrieve and craft better prompt
-# step 5 link to AI and test
+# step 3 do up database, make sure db upload and storage works (/)
+# step 4 create functions to retrieve and craft better prompt (/)
+# step 5 link to AI and test (/)
 
 # Capstone (before Shanghai):
 # -> UI changes/functions
-# Allow User to add or delete rows
+# Allow User to add or delete rows (/ only delete)
 # Make Test Data visible and editable
 # Store modules per project folder
 # Display document/module name e.g SCR_001
@@ -71,7 +71,7 @@ if CONFIG_MODE == "docker":
     TEMPLATE_PATH = BASE_DIR / "testdata" / "DPP2_Template.xlsx"
     OUTPUT_PATH = BASE_DIR / "generateddata" / "updated_test_cases.xlsx"
     from app.db.database import SessionLocal, engine, Base
-    from app.db.models import Project, TestScripts
+    from app.db.models import Project, Module, TestScripts
     print(TEMPLATE_PATH)
 else:
     STATIC_DIR = BASE_DIR / "templates"
@@ -106,36 +106,47 @@ def get_db():
         yield db
     finally:
         db.close()
+        
+        
+class ProjectCreate(BaseModel):
+    name: str
+    description: str = ""
 
-# GET all projects without using schemas
-@app.get("/projects")
+class ProjectResponse(BaseModel):
+    id: int
+    name: str
+    description: str
+    created_at: datetime
+    updated_at: datetime
+
+    class Config:
+        orm_mode = True
+        
+@app.get("/projects", response_model=list[ProjectResponse])
 def read_projects(db: Session = Depends(get_db)):
     projects = db.query(Project).all()
-    return [{"id": p.id, "name": p.name, "description": p.description, "created_at": p.created_at, "updated_at": p.updated_at} for p in projects]
+    return projects
 
-# POST to create a new project without using schemas
-@app.post("/projects")
-def create_project(project: dict, db: Session = Depends(get_db)):
+
+### 🔹 Fixed: POST `/projects` ###
+@app.post("/projects", response_model=ProjectResponse)
+def create_project(project: ProjectCreate, db: Session = Depends(get_db)):
     try:
         new_project = Project(
-            name=project.get("name"),
-            description=project.get("description", ""),  # Default to empty string if not provided
-            created_at=datetime.utcnow(),
-            updated_at=datetime.utcnow()
+            name=project.name,
+            description=project.description,
         )
+
         db.add(new_project)
         db.commit()
         db.refresh(new_project)
-        return {
-            "id": new_project.id,
-            "name": new_project.name,
-            "description": new_project.description,
-            "created_at": new_project.created_at,
-            "updated_at": new_project.updated_at
-        }
+
+        return new_project
+
     except Exception as e:
         db.rollback()
-        raise HTTPException(status_code=500, detail=f"Error creating project: {e}")
+        logging.error(f"Error creating project: {e}")
+        raise HTTPException(status_code=500, detail="Error creating project")
     
 
 class ProjectResponse(BaseModel):
@@ -160,6 +171,92 @@ def get_project(project_id: int, db: Session = Depends(get_db)):
     
     logging.info(f"Project found: {project.name}")
     return project
+
+#modules
+
+class ModuleCreate(BaseModel):
+    project_id: int
+    name: str
+    description: str = ""  # Default to empty if not provided
+
+class ModuleResponse(BaseModel):
+    id: int
+    project_id: int
+    project_specific_id: int
+    name: str
+    description: str
+    created_at: datetime
+    updated_at: datetime
+
+    class Config:
+        orm_mode = True
+
+
+### 🔹 GET all modules ###
+@app.get("/modules", response_model=list[ModuleResponse])
+def read_modules(db: Session = Depends(get_db)):
+    modules = db.query(Module).all()
+    return modules
+
+
+### 🔹 GET a module by its global `id` ###
+@app.get("/modules/{module_id}", response_model=ModuleResponse)
+def get_module(module_id: int, db: Session = Depends(get_db)):
+    module = db.query(Module).filter(Module.id == module_id).first()
+    
+    if not module:
+        logging.error(f"Module with ID {module_id} not found.")
+        raise HTTPException(status_code=404, detail="Module not found")
+    
+    return module
+
+
+### 🔹 GET a module by `project_id` & `project_specific_id` ###
+@app.get("/modules/{project_id}/{project_specific_id}", response_model=ModuleResponse)
+def get_module_by_project_specific_id(project_id: int, project_specific_id: int, db: Session = Depends(get_db)):
+    module = db.query(Module).filter(
+        Module.project_id == project_id,
+        Module.project_specific_id == project_specific_id
+    ).first()
+
+    if not module:
+        logging.error(f"Module {project_specific_id} not found in project {project_id}.")
+        raise HTTPException(status_code=404, detail="Module not found in the specified project")
+    
+    return module
+
+
+### 🔹 POST: Create a new module (auto-generates `project_specific_id`) ###
+@app.post("/modules", response_model=ModuleResponse)
+def create_module(module: ModuleCreate, db: Session = Depends(get_db)):
+    try:
+        # Get the latest `project_specific_id` for the given project
+        latest_module = (
+            db.query(Module)
+            .filter(Module.project_id == module.project_id)
+            .order_by(Module.project_specific_id.desc())
+            .first()
+        )
+        new_project_specific_id = (latest_module.project_specific_id + 1) if latest_module else 1
+
+        new_module = Module(
+            project_id=module.project_id,
+            project_specific_id=new_project_specific_id,
+            name=module.name,
+            description=module.description,
+            created_at=datetime.utcnow(),
+            updated_at=datetime.utcnow()
+        )
+
+        db.add(new_module)
+        db.commit()
+        db.refresh(new_module)
+        return new_module
+
+    except Exception as e:
+        db.rollback()
+        logging.error(f"Error creating module: {e}")
+        raise HTTPException(status_code=500, detail="Error creating module")
 
 
 # rest of app routes

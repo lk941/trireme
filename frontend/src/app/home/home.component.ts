@@ -50,6 +50,6 @@ export class HomeComponent implements OnInit {
   }
 
   navigateToProject(projectId: number): void {
-    this.router.navigate(['/preview', projectId]);
+    this.router.navigate(['/project-page', projectId]);
   }
 }

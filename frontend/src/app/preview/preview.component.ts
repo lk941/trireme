@@ -30,7 +30,7 @@ export class PreviewComponent implements OnInit{
   }
 
   ngOnInit() {
-    this.projectId = Number(this.route.snapshot.paramMap.get('id'));
+    this.projectId = Number(this.route.snapshot.paramMap.get('projectId'));
     this.loadProjectDetails();
 
     const navState = history.state;

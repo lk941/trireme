@@ -1,44 +1,71 @@
-from sqlalchemy import Column, Integer, String, Text, DateTime, ForeignKey
+from sqlalchemy import Column, Integer, String, Text, DateTime, ForeignKey, ForeignKeyConstraint, UniqueConstraint
+from sqlalchemy.sql import func
+from sqlalchemy.orm import relationship
 from .database import Base
 
 
 class Project(Base):
     __tablename__ = "projects"
 
-    id = Column(Integer, primary_key=True, index=True)
-    name = Column(String, index=True)
-    description = Column(String)
-    created_at = Column(DateTime)
-    updated_at = Column(DateTime)
+    id = Column(Integer, primary_key=True, index=True)  # Unique project ID
+    name = Column(String, index=True, nullable=False)
+    description = Column(String, nullable=True)
+    created_at = Column(DateTime, default=func.now())
+    updated_at = Column(DateTime, default=func.now(), onupdate=func.now())
+
+    # Relationship to modules
+    modules = relationship("Module", back_populates="project")
+
+
+class Module(Base):
+    __tablename__ = "modules"
+
+    id = Column(Integer, primary_key=True, index=True)  # Global unique module ID
+    project_id = Column(Integer, ForeignKey("projects.id"), index=True)  
+    project_specific_id = Column(Integer, index=True)  # Sequential within project
+
+    name = Column(String, index=True, nullable=False)
+    description = Column(String, nullable=True)
+    created_at = Column(DateTime, default=func.now())
+    updated_at = Column(DateTime, default=func.now(), onupdate=func.now())
+    
+    project = relationship("Project", back_populates="modules")
+
+    # Ensure (project_id, project_specific_id) is unique
+    __table_args__ = (
+        UniqueConstraint("project_id", "project_specific_id", name="uq_project_specific_id"),
+    )
 
 class TestScripts(Base):
     __tablename__ = "test_scripts"
 
     id = Column(Integer, primary_key=True, index=True)
-    name = Column(String, index=True)
-    script_content = Column(String)
-    
+    project_id = Column(Integer, ForeignKey("projects.id"), index=True)  
+    module_id = Column(Integer, ForeignKey("modules.id"), index=True)  
+    name = Column(String, index=True, nullable=False)
+    script_content = Column(Text, nullable=False)
+
+    created_at = Column(DateTime, default=func.now())
+
+
 class MandatoryTestCase(Base):
     __tablename__ = "mandatory_test_cases"
 
-    id = Column(Integer, primary_key=True, index=True)  # Auto-incremented ID
-    test_case_id = Column(String, unique=True, nullable=False, index=True)  # ID from Excel
-    test_case_name = Column(String, nullable=False)  # Name of the test case
-    pre_condition = Column(Text, nullable=True)  # Pre-condition description
-    actors = Column(String, nullable=True)  # Roles or entities involved
-    test_data = Column(Text, nullable=True)  # Input data for the test
-    step_description = Column(Text, nullable=False)  # Steps for the test
-    expected_result = Column(Text, nullable=False)  # Expected outcome
-    created_at = Column(DateTime)  # Timestamp
+    id = Column(Integer, primary_key=True, index=True)
+    project_id = Column(Integer, ForeignKey("projects.id"), index=True)  
+    name = Column(String, index=True, nullable=False)
+    script_content = Column(Text, nullable=False)
+    created_at = Column(DateTime, default=func.now())
 
-    
-class SoftwareChangeRequests(Base):
+
+class SoftwareChangeRequest(Base):
     __tablename__ = "software_change_requests"
 
     id = Column(Integer, primary_key=True, index=True)
-    project_id = Column(Integer, ForeignKey("projects.id"), index=True) 
-    name = Column(String, nullable=False, index=True)  # Test case name
-    description = Column(Text, nullable=False)  # Detailed test steps
-    contents = Column(Text, nullable=False) 
-    created_at = Column(DateTime)
-    
+    project_id = Column(Integer, ForeignKey("projects.id"), index=True)  
+    module_id = Column(Integer, ForeignKey("modules.id"), index=True)  
+
+    name = Column(String, nullable=False, index=True)
+    description = Column(Text, nullable=False)
+    contents = Column(Text, nullable=False)
+    created_at = Column(DateTime, default=func.now())
