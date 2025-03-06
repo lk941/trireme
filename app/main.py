@@ -169,6 +169,7 @@ class ModuleResponse(BaseModel):
     description: str
     created_at: datetime
     updated_at: datetime
+    script_content: str
 
     class Config:
         orm_mode = True
@@ -240,7 +241,8 @@ def create_module(module: ModuleCreate, db: Session = Depends(get_db)):
             name=module.name,
             description=module.description,
             created_at=datetime.utcnow(),
-            updated_at=datetime.utcnow()
+            updated_at=datetime.utcnow(),
+            script_content=""
         )
 
         db.add(new_module)
@@ -252,6 +254,7 @@ def create_module(module: ModuleCreate, db: Session = Depends(get_db)):
         db.rollback()
         logging.error(f"Error creating module: {e}")
         raise HTTPException(status_code=500, detail="Error creating module")
+    
 
 
 # rest of app routes

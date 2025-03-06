@@ -33,7 +33,7 @@ export class ProjectPageComponent implements OnInit{
   ngOnInit(): void {
     
     this.route.paramMap.subscribe(params => {
-      this.projectId = Number(params.get('id')); 
+      this.projectId = Number(params.get('pid')); 
       console.log(this.projectId);
     });
 

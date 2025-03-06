@@ -28,6 +28,7 @@ class Module(Base):
     description = Column(String, nullable=True)
     created_at = Column(DateTime, default=func.now())
     updated_at = Column(DateTime, default=func.now(), onupdate=func.now())
+    script_content = Column(Text, nullable=False)
     
     project = relationship("Project", back_populates="modules")
 
