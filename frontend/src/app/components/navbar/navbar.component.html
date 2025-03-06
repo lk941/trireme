@@ -1,0 +1,25 @@
+<nav class="navbar">
+    <!-- Logo & App Name -->
+    <div class="navbar-left" (click)="navigateToHome()">
+      <img src="assets/icons/trireme-logo.png" alt="App Logo" class="logo" />
+      <span class="app-name">PSA | Trireme Automation</span> 
+    </div>
+  
+    <!-- Breadcrumb Navigation -->
+    <div class="breadcrumb">
+      <span *ngIf="breadcrumb.projectName">{{ breadcrumb.projectName }} / </span>
+      <span *ngIf="breadcrumb.module">{{ breadcrumb.module }}</span>
+    </div>
+  
+    <!-- Search Bar -->
+    <div class="navbar-right">
+      <i class="fas fa-search" aria-hidden="true"></i>
+      <input
+        type="text"
+        placeholder="Search..."
+        (input)="onSearch($event)"
+      />
+    </div>
+  </nav>
+  <hr />
+  

@@ -1,4 +1,19 @@
 <div>
+  <h1>{{ breadcrumb.projectName }}</h1>
+
+  <p> Module Test Cases (standard): </p>
+  <div *ngIf="moduleTC">
+    <div class="projects-container">
+
+    </div>
+  </div>
+  <div *ngIf="moduleTC == null">
+    <p> This module has no existing test scripts</p>
+    <div class="projects-container">
+      <button (click)=navigateToMandatory()> + Add Module Test Scripts (Mandatory Steps) </button>
+    </div>
+  </div>
+
   <h2>Preview and Edit Test Cases</h2>
 
   <!-- File Upload -->
@@ -27,6 +42,7 @@
         <tr>
           <th>Test Case ID</th>
           <th>Test Case Name</th>
+          <th>Test Case Type</th>
           <th>Pre-Condition</th>
           <th>Actor(s)</th>
           <th>Test Data</th>
@@ -37,33 +53,52 @@
       <tbody>
         <tr *ngFor="let testCase of editedTestCases; let i = index">
           <td>
-            <input [(ngModel)]="editedTestCases[i]['Test_Case_ID']" />
+            <textarea [(ngModel)]="editedTestCases[i]['Test_Case_ID']"></textarea>
           </td>
           <td>
-            <input [(ngModel)]="editedTestCases[i]['Test_Case_Name']" />
+            <textarea [(ngModel)]="editedTestCases[i]['Test_Case_Name']"></textarea>
           </td>
           <td>
-            <input [(ngModel)]="editedTestCases[i]['Pre_Condition']" />
+            <textarea [(ngModel)]="editedTestCases[i]['Test_Case_Type']"></textarea>
           </td>
           <td>
-            <input [(ngModel)]="editedTestCases[i]['Actor_s']" />
+            <textarea [(ngModel)]="editedTestCases[i]['Pre_Condition']"></textarea>
           </td>
           <td>
-            <input [(ngModel)]="editedTestCases[i]['Test_Data']" />
+            <textarea [(ngModel)]="editedTestCases[i]['Actor_s']"></textarea>
           </td>
           <td>
-            <input [(ngModel)]="editedTestCases[i]['Step_Description']" />
+            <textarea [(ngModel)]="editedTestCases[i]['Test_Data']"></textarea>
           </td>
           <td>
-            <input [(ngModel)]="editedTestCases[i]['Expected_Result']" />
+            <textarea [(ngModel)]="editedTestCases[i]['Step_Description']"></textarea>
+          </td>
+          <td>
+            <textarea [(ngModel)]="editedTestCases[i]['Expected_Result']"></textarea>
+          </td>
+          <td>
+            <button (click)="deleteRow(i)">Delete</button>
           </td>
         </tr>
       </tbody>
     </table>
 
+    <!-- Add Row Button -->
+    <button (click)="addRow()">Add Row</button>
+
+    <!-- Download Button -->
+    <button (click)="onDownload()" [disabled]="isProcessing">
+      Save
+    </button>
+
     <!-- Download Button -->
     <button (click)="onDownload()" [disabled]="isProcessing">
       Download Excel
+    </button>
+    
+    <!-- Redirect to test setup -->
+    <button *ngIf="projectId" (click)="navigateToSetup(projectId)" [disabled]="!projectId">
+      Setup Test Automation
     </button>
   </div>
 </div>

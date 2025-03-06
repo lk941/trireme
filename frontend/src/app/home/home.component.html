@@ -1,42 +1,20 @@
-<h1>Document Management Portal</h1>
+<h1>QA Automation Portal</h1>
 <section id="anonymization">
-  <h2>Anonymize/De-anonymize Documents</h2>
-
-  <!-- Anonymize Form -->
-  <form (ngSubmit)="onAnonymizeSubmit($event)">
-    <div>
-      <label for="file">Upload File:</label>
-      <input type="file" (change)="onAnonymizeFileChange($event)" required />
+  <h2>All Projects</h2>
+  <div class="projects-container">
+    <div class="project-card" *ngFor="let project of projects" (click)="navigateToProject(project.name, project.id)">
+      <img src="assets/icons/folder.png" alt="Project Folder">
+      <p>{{ project.name }}</p>
     </div>
-    
-    <div>
-      <label for="keywords">Confidential Keywords:</label>
-      <input type="text" id="keywords" [(ngModel)]="anonymizeKeywords" name="keywords" placeholder="Enter keywords separated by commas" required />
-    </div>
-    
-    <button type="submit" class="btn btn-primary">Anonymize</button>
-  </form>
-
-  <div *ngIf="isProcessingAnonymize">Document Processing...</div>
-  <a *ngIf="downloadLinkAnonymize" [href]="downloadLinkAnonymize" download>Download Anonymized File</a>
-  <br>
-
-
-  <!-- De-anonymize Form --> 
-  <form (ngSubmit)="onDeAnonymizeSubmit($event)">
-    <input type="file" (change)="onDeAnonymizeFileChange($event)" required />
-    <button type="submit" class="btn btn-primary">De-anonymize</button>
-  </form>
-  <div *ngIf="isProcessingDeAnonymize">Document Processing...</div>
-  <a *ngIf="downloadLinkDeAnonymize" [href]="downloadLinkDeAnonymize" download>Download De-anonymized File</a>
+  </div>
+  <button (click)="openModal()">Create New Project</button>
 </section>
 
-<section id="test-case-generation">
-  <h2>Generate Test Scripts</h2>
-  <form (ngSubmit)="onTestCaseSubmit($event)">
-    <input type="file" (change)="onTestCaseFileChange($event)" required />
-    <button type="submit">Generate Test Scripts</button>
-  </form>
-  <div *ngIf="isProcessingTestCase">Document Processing...</div>
-  <a *ngIf="downloadLinkTestCase" [href]="downloadLinkTestCase" download>Download Test Scripts</a>
-</section>
+<div *ngIf="isModalOpen" class="modal">
+  <div class="modal-content">
+    <span class="close" (click)="closeModal()">&times;</span>
+    <h2>Create New Project</h2>
+    <input type="text" [(ngModel)]="newProjectName" placeholder="Enter project name">
+    <button (click)="createProject()">Submit</button>
+  </div>
+</div>

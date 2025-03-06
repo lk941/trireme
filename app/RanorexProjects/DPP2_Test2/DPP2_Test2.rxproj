@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project name="DPP2_Test2" browser="chrome" url="file:///C:/Users/leeke/Desktop/projs/trireme/app/testdata/testsite.html">
+  <Modules>
+    <Module>DPP2_Test2_Tests.cs</Module>
+  </Modules>
+</Project>

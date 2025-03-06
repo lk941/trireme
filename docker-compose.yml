@@ -37,55 +37,6 @@ services:
     # networks:
     #   - ollama_network
 
-  # ollama:
-  #   image: ollama/ollama
-  #   container_name: ollama
-  #   environment:
-  #     - NVIDIA_VISIBLE_DEVICES=all
-  #     - OLLAMA_LLM_LIBRARY=cuda
-  #     - OLLAMA_HOST=http://0.0.0.0:11434
-  #     - OLLAMA_GPU_OVERHEAD=0
-  #     - MODEL=mistral
-  #   entrypoint: ["/root/entrypoint.sh"]
-  #   ports:
-  #     - "11435:11434"  # Change host port to avoid conflicts
-  #   volumes:
-  #     - ollama:/root/.ollama
-  #     - ./entrypoint.sh:/root/entrypoint.sh  # Mount entrypoint script
-  #   networks:
-  #     - ollama_network
-  #   deploy:
-  #     resources:
-  #       reservations:
-  #         devices:
-  #           - driver: nvidia
-  #             count: 1
-  #             capabilities: [gpu]
-    
-  # codestral:
-  #   image: ollama/ollama
-  #   container_name: codestral
-  #   environment:
-  #     - NVIDIA_VISIBLE_DEVICES=all
-  #     - CODESTRAL_LLM_LIBRARY=cuda  # Update as necessary
-  #     - CODESTRAL_HOST=http://0.0.0.0:11534
-  #     - MODEL=codestral
-  #   entrypoint: ["/root/entrypoint.sh"]
-  #   ports:
-  #     - "11535:11534"  # Assign a unique port for Codestral
-  #   volumes:
-  #     - codestral:/root/.codestral
-  #     - ./entrypoint.sh:/root/entrypoint.sh  # Mount entrypoint script
-  #   networks:
-  #     - ollama_network
-  #   deploy:
-  #     resources:
-  #       reservations:
-  #         devices:
-  #           - driver: nvidia
-  #             count: 1
-  #             capabilities: [gpu]
-
 # networks:
 #   ollama_network:
 #     external: true
@@ -97,3 +48,5 @@ volumes:
     driver: local
   # codestral: 
   #   driver: local
+
+  

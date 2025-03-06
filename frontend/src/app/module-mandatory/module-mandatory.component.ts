@@ -6,21 +6,21 @@ import { CommonModule } from '@angular/common';
 import { ActivatedRoute, Router } from '@angular/router';
 import { NavbarService } from '../services/navbar.service';
 
+
 @Component({
-  selector: 'app-preview',
+  selector: 'app-module-mandatory',
   standalone: true,
   imports: [FormsModule, HttpClientModule, CommonModule],
-  templateUrl: './preview.component.html',
-  styleUrl: './preview.component.css'
+  templateUrl: './module-mandatory.component.html',
+  styleUrl: './module-mandatory.component.css'
 })
-export class PreviewComponent implements OnInit{
-  testCases: any[] = []; // Stores the generated test cases
+export class ModuleMandatoryComponent implements OnInit{
+testCases: any[] = []; // Stores the generated test cases
   editedTestCases: any[] = []; // Stores the edited test cases
   file: File | null = null; // Stores the uploaded file
   isProcessing: boolean = false; // Tracks loading state
   isDataLoaded: boolean = false; // Tracks if data is loaded for table display
   projectId: number | null = null;
-  moduleId: number | null = null;
   breadcrumb = { projectName: '', module: '' };
   moduleTC: String | null = null; // Returns either name of file or no existing module test cases
 
@@ -32,13 +32,8 @@ export class PreviewComponent implements OnInit{
     });
   }
 
-  navigateToMandatory() {
-    this.router.navigate(['/module-mandatory', this.projectId, this.moduleId]);
-  }
-
   ngOnInit() {
-    this.projectId = Number(this.route.snapshot.paramMap.get('pid'));
-    this.moduleId = Number(this.route.snapshot.paramMap.get('mid'));
+    this.projectId = Number(this.route.snapshot.paramMap.get('projectId'));
 
     const navState = history.state;
 
@@ -95,7 +90,7 @@ export class PreviewComponent implements OnInit{
     const formData = new FormData();
     formData.append('file', this.file);
 
-    this.http.post('http://127.0.0.1:8000/generate-test-cases', formData)
+    this.http.post('http://127.0.0.1:8000/display-mandatory', formData)
       .subscribe(
         (response: any) => {
           this.isProcessing = false;

@@ -1,0 +1,19 @@
+.main-container {
+    padding: 0 20px;
+    max-width: 100%;
+    overflow-x: hidden;
+}
+
+button {
+    margin-top: 20px;
+    margin-right:10px;
+    padding: 10px 20px;
+    background-color: #0e1f3b;
+    color: white;
+    border: none;
+    cursor: pointer;
+  }
+  
+  button:hover {
+    background-color: #283e61;
+  }
