@@ -11,7 +11,7 @@ import { NavbarService } from '../services/navbar.service';
   standalone: true,
   imports: [FormsModule, HttpClientModule, CommonModule],
   templateUrl: './project-page.component.html',
-  styleUrl: './project-page.component.css'
+  styleUrl: './project-page.component.scss'
 })
 export class ProjectPageComponent implements OnInit{
   testCases: any[] = []; // Stores the generated test cases

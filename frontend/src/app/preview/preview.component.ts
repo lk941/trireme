@@ -11,7 +11,7 @@ import { NavbarService } from '../services/navbar.service';
   standalone: true,
   imports: [FormsModule, HttpClientModule, CommonModule],
   templateUrl: './preview.component.html',
-  styleUrl: './preview.component.css'
+  styleUrl: './preview.component.scss'
 })
 export class PreviewComponent implements OnInit{
   testCases: any[] = []; // Stores the generated test cases
@@ -25,16 +25,6 @@ export class PreviewComponent implements OnInit{
   moduleTC: String | null = null; // Returns either name of file or no existing module test cases
 
   constructor(private navbarService: NavbarService, private route: ActivatedRoute, private http: HttpClient, private router: Router) {}
-
-  navigateToSetup(projectId: number) {
-    this.router.navigate(['/automation-setup', projectId], {
-      state: { testData: this.editedTestCases, uploadedFile: this.file }
-    });
-  }
-
-  navigateToMandatory() {
-    this.router.navigate(['/module-mandatory', this.projectId, this.moduleId]);
-  }
 
   ngOnInit() {
     this.projectId = Number(this.route.snapshot.paramMap.get('pid'));
@@ -57,6 +47,16 @@ export class PreviewComponent implements OnInit{
         this.file = navState.uploadedFile;
       }
     }
+  }
+
+  navigateToSetup(projectId: number) {
+    this.router.navigate(['/automation-setup', projectId], {
+      state: { testData: this.editedTestCases, uploadedFile: this.file }
+    });
+  }
+
+  navigateToMandatory() {
+    this.router.navigate(['/module-mandatory', this.breadcrumb.projectName , this.projectId, this.breadcrumb.module, this.moduleId]);
   }
 
 

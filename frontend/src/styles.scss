@@ -1,0 +1,20 @@
+/* You can add global styles to this file, and also import other style files */
+.main-container {
+    padding: 10 50px;
+    max-width: 100%;
+    overflow-x: hidden;
+}
+
+button {
+    margin-top: 20px;
+    margin-right:10px;
+    padding: 10px 20px;
+    background-color: #0e1f3b;
+    color: white;
+    border: none;
+    cursor: pointer;
+  }
+  
+  button:hover {
+    background-color: #283e61;
+  }

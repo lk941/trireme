@@ -10,7 +10,7 @@ import { CommonModule } from '@angular/common';
   standalone: true,
   imports: [FormsModule, HttpClientModule, CommonModule],
   templateUrl: './automation-setup.component.html',
-  styleUrl: './automation-setup.component.css'
+  styleUrl: './automation-setup.component.scss'
 })
 export class AutomationSetupComponent {
   selectedSuite: string = 'Ranorex';

@@ -12,17 +12,29 @@ import { NavbarService } from '../services/navbar.service';
   standalone: true,
   imports: [FormsModule, HttpClientModule, CommonModule],
   templateUrl: './module-mandatory.component.html',
-  styleUrl: './module-mandatory.component.css'
+  styleUrl: './module-mandatory.component.scss'
 })
 export class ModuleMandatoryComponent implements OnInit{
-testCases: any[] = []; // Stores the generated test cases
-  editedTestCases: any[] = []; // Stores the edited test cases
+  testCases: any[] = []; // Stores the generated test cases
   file: File | null = null; // Stores the uploaded file
   isProcessing: boolean = false; // Tracks loading state
   isDataLoaded: boolean = false; // Tracks if data is loaded for table display
   projectId: number | null = null;
+  moduleId: number | null = null;
   breadcrumb = { projectName: '', module: '' };
   moduleTC: String | null = null; // Returns either name of file or no existing module test cases
+  editedTestCases: any[] = [
+    {
+      Test_Case_ID: '',
+      Test_Case_Name: '',
+      Test_Case_Type: '',
+      Pre_Condition: '',
+      Actor_s: '',
+      Test_Data: '',
+      Step_Description: '',
+      Expected_Result: ''
+    }
+  ];
 
   constructor(private navbarService: NavbarService, private route: ActivatedRoute, private http: HttpClient, private router: Router) {}
 
@@ -33,7 +45,10 @@ testCases: any[] = []; // Stores the generated test cases
   }
 
   ngOnInit() {
-    this.projectId = Number(this.route.snapshot.paramMap.get('projectId'));
+    this.projectId = Number(this.route.snapshot.paramMap.get('pid'));
+    this.moduleId = Number(this.route.snapshot.paramMap.get('mid'));
+
+    this.loadModuleTestCases()
 
     const navState = history.state;
 
@@ -54,12 +69,21 @@ testCases: any[] = []; // Stores the generated test cases
     }
   }
 
+  loadModuleTestCases(): void {
+    console.log(this.projectId)
+    this.http.get<any>(`http://localhost:8000/modules/${this.projectId}/${this.moduleId}`).subscribe(data => {
+      this.testCases = data?.script_content ?? []; 
+    });
+    console.log(this.testCases)
+  }
+
 
   // Handles file selection
   onFileChange(event: Event): void {
     const target = event.target as HTMLInputElement;
     this.file = target.files?.[0] || null;
   }
+  
 
   addRow(): void {
     const newTestCase = {
@@ -104,6 +128,23 @@ testCases: any[] = []; // Stores the generated test cases
         }
       );
   }
+
+  updateModuleTestCases(): void {
+    const updatedData = { script_content: this.editedTestCases };
+
+    this.http.put(`http://localhost:8000/modules/${this.projectId}/${this.moduleId}`, updatedData)
+      .subscribe(
+        response => {
+          console.log("Module test cases updated successfully!", response);
+          alert("Module test cases updated successfully!");
+        },
+        error => {
+          console.error("Error updating module test cases:", error);
+          alert("Failed to update module test cases.");
+        }
+      );
+  }
+
 
   onDownload(): void {
     this.isProcessing = true;

@@ -204,12 +204,20 @@ def get_module(module_id: int, db: Session = Depends(get_db)):
         logging.error(f"Module with ID {module_id} not found.")
         raise HTTPException(status_code=404, detail="Module not found")
     
+    try:
+        module.script_content = json.loads(module.script_content) if module.script_content else []
+    except json.JSONDecodeError:
+        module.script_content = []  # Handle invalid JSON gracefully
+    
     return module
 
 
-### GET a module by `project_id` & `project_specific_id` ###
 @app.get("/modules/{project_id}/{project_specific_id}", response_model=ModuleResponse)
-def get_module_by_project_specific_id(project_id: int, project_specific_id: int, db: Session = Depends(get_db)):
+def get_module_by_project_specific_id(
+    project_id: int, 
+    project_specific_id: int, 
+    db: Session = Depends(get_db)
+):
     module = db.query(Module).filter(
         Module.project_id == project_id,
         Module.project_specific_id == project_specific_id
@@ -218,6 +226,11 @@ def get_module_by_project_specific_id(project_id: int, project_specific_id: int,
     if not module:
         logging.error(f"Module {project_specific_id} not found in project {project_id}.")
         raise HTTPException(status_code=404, detail="Module not found in the specified project")
+    
+    try:
+        module.script_content = json.loads(module.script_content) if module.script_content else []
+    except json.JSONDecodeError:
+        module.script_content = []  # Handle invalid JSON gracefully
     
     return module
 
@@ -255,6 +268,45 @@ def create_module(module: ModuleCreate, db: Session = Depends(get_db)):
         logging.error(f"Error creating module: {e}")
         raise HTTPException(status_code=500, detail="Error creating module")
     
+    
+class ModuleUpdateRequest(BaseModel):
+    script_content: List[dict]  # Assuming script_content is a list of test cases
+
+    class Config:
+        orm_mode = True
+        
+    
+@app.put("/modules/{project_id}/{project_specific_id}", response_model=dict)
+def update_module_script_content(
+    project_id: int,
+    project_specific_id: int,
+    request: ModuleUpdateRequest,
+    db: Session = Depends(get_db),
+):
+    # Fetch the module
+    module = db.query(Module).filter(
+        Module.project_id == project_id,
+        Module.project_specific_id == project_specific_id
+    ).first()
+
+    if not module:
+        logging.error(f"Module {project_specific_id} not found in project {project_id}.")
+        raise HTTPException(status_code=404, detail="Module not found in the specified project")
+
+    try:
+        # Convert script_content to JSON format
+        module.script_content = json.dumps(request.script_content)  # Convert Python object to JSON string
+
+        # Commit changes
+        db.commit()
+        db.refresh(module)
+
+        return {"message": "Module script_content updated successfully!"}
+    
+    except Exception as e:
+        db.rollback()
+        logging.error(f"Database error: {e}")
+        raise HTTPException(status_code=500, detail="Database error while updating module")
 
 
 # rest of app routes
@@ -263,15 +315,6 @@ def create_module(module: ModuleCreate, db: Session = Depends(get_db)):
 async def get_ui():
     with open(BASE_DIR / "templates" / "index.html") as f:
         return HTMLResponse(content=f.read())
-
-class TestConnectionPayload(BaseModel):
-    message: str
-
-@app.post("/test-connection")
-async def test_connection(payload: TestConnectionPayload):
-    logging.debug(f"Payload: {payload}")
-    print(f"Received message: {payload.message}")
-    return {"message": f"Message received: {payload.message}"}
 
 
 def cleanup_files(temp_dir, file_path):
