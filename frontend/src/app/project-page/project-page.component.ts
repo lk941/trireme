@@ -27,6 +27,7 @@ export class ProjectPageComponent implements OnInit{
   isModalMandOpen: boolean = false;
   breadcrumb = { projectName: '', module: '' };
   isEditing: boolean = false;
+  description: string = '';
 
   constructor(private navbarService: NavbarService, private route: ActivatedRoute, private http: HttpClient, private router: Router) {}
 

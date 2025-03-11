@@ -72,9 +72,11 @@ export class ModuleMandatoryComponent implements OnInit{
   loadModuleTestCases(): void {
     console.log(this.projectId)
     this.http.get<any>(`http://localhost:8000/modules/${this.projectId}/${this.moduleId}`).subscribe(data => {
-      this.testCases = data?.script_content ?? []; 
+      console.log(data.script_content)
+      this.testCases = JSON.parse(data.script_content) ?? []; 
+      this.editedTestCases = [...this.testCases];
+      console.log(this.editedTestCases);
     });
-    console.log(this.testCases)
   }
 
 
@@ -114,7 +116,7 @@ export class ModuleMandatoryComponent implements OnInit{
     const formData = new FormData();
     formData.append('file', this.file);
 
-    this.http.post('http://127.0.0.1:8000/display-mandatory', formData)
+    this.http.post('http://127.0.0.1:8000/generate-test-cases', formData)
       .subscribe(
         (response: any) => {
           this.isProcessing = false;

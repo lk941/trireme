@@ -18,3 +18,41 @@ button {
   button:hover {
     background-color: #283e61;
   }
+
+  button:disabled {
+    background-color: #cccccc;
+    cursor: not-allowed;
+  }
+
+  .table-container {
+    width: 100%;
+    overflow-x: auto; /* Enables horizontal scrolling */
+    display: block;
+  }
+  
+  .test-case-table {
+    width: 100%;
+    border-collapse: collapse;
+    white-space: nowrap; /* Ensures headers stay in a single row */
+  }
+  
+  .test-case-table th, .test-case-table td {
+    border: 1px solid #ddd;
+    padding: 8px;
+    text-align: left;
+    vertical-align: top;
+  }
+  
+  .test-case-table th {
+    background-color: #f4f4f4;
+  }
+  
+  .test-case-table textarea {
+    width: 100%; /* Ensures textareas don't break layout */
+    min-height: 40px;
+    resize: vertical; /* Allows only vertical resizing */
+    overflow: hidden;
+    border: 1px solid #ccc;
+    font-size: 14px;
+  }
+  

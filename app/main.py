@@ -204,11 +204,6 @@ def get_module(module_id: int, db: Session = Depends(get_db)):
         logging.error(f"Module with ID {module_id} not found.")
         raise HTTPException(status_code=404, detail="Module not found")
     
-    try:
-        module.script_content = json.loads(module.script_content) if module.script_content else []
-    except json.JSONDecodeError:
-        module.script_content = []  # Handle invalid JSON gracefully
-    
     return module
 
 
@@ -226,11 +221,6 @@ def get_module_by_project_specific_id(
     if not module:
         logging.error(f"Module {project_specific_id} not found in project {project_id}.")
         raise HTTPException(status_code=404, detail="Module not found in the specified project")
-    
-    try:
-        module.script_content = json.loads(module.script_content) if module.script_content else []
-    except json.JSONDecodeError:
-        module.script_content = []  # Handle invalid JSON gracefully
     
     return module
 
@@ -285,6 +275,73 @@ def update_module_script_content(
 ):
     # Fetch the module
     module = db.query(Module).filter(
+        Module.project_id == project_id,
+        Module.project_specific_id == project_specific_id
+    ).first()
+
+    if not module:
+        logging.error(f"Module {project_specific_id} not found in project {project_id}.")
+        raise HTTPException(status_code=404, detail="Module not found in the specified project")
+
+    try:
+        # Convert script_content to JSON format
+        module.script_content = json.dumps(request.script_content)  # Convert Python object to JSON string
+
+        # Commit changes
+        db.commit()
+        db.refresh(module)
+
+        return {"message": "Module script_content updated successfully!"}
+    
+    except Exception as e:
+        db.rollback()
+        logging.error(f"Database error: {e}")
+        raise HTTPException(status_code=500, detail="Database error while updating module")
+    
+    
+### POST: Create a new ts (auto-generates `project_specific_id`) ###
+@app.post("/test-scripts", response_model=ModuleResponse)
+def create_test_scripts(module: ModuleCreate, db: Session = Depends(get_db)):
+    try:
+        # Get the latest `project_specific_id` for the given project
+        latest_module = (
+            db.query(TestScripts)
+            .filter(TestScripts.project_id == module.project_id)
+            .order_by(Module.project_specific_id.desc())
+            .first()
+        )
+        new_project_specific_id = (latest_module.project_specific_id + 1) if latest_module else 1
+
+        new_module = TestScripts(
+            project_id=module.project_id,
+            project_specific_id=new_project_specific_id,
+            name=module.name,
+            description=module.description,
+            created_at=datetime.utcnow(),
+            updated_at=datetime.utcnow(),
+            script_content=""
+        )
+
+        db.add(new_module)
+        db.commit()
+        db.refresh(new_module)
+        return new_module
+
+    except Exception as e:
+        db.rollback()
+        logging.error(f"Error creating module: {e}")
+        raise HTTPException(status_code=500, detail="Error creating module")
+    
+    
+@app.put("/test-scripts/{project_id}/{project_specific_id}", response_model=dict)
+def update_module_script_content(
+    project_id: int,
+    project_specific_id: int,
+    request: ModuleUpdateRequest,
+    db: Session = Depends(get_db),
+):
+    # Fetch the module
+    module = db.query(TestScripts).filter(
         Module.project_id == project_id,
         Module.project_specific_id == project_specific_id
     ).first()
@@ -395,15 +452,6 @@ async def generate_test_cases(file: UploadFile = File(...)):
             os.remove(file_path)
             
 
-# class TestCase(BaseModel):
-#     Test_Case_ID: str
-#     Test_Case_Name: str
-#     Pre_Condition: str
-#     Actor_s: str
-#     Test_Data: Optional[Dict[str, Union[str, List[str]]]] = None 
-#     Step_Description: List[str]
-#     Expected_Result: str
-
 class TestCase(BaseModel):
     Test_Case_ID: str
     Test_Case_Name: str
@@ -468,7 +516,7 @@ async def generate_test_scripts(document_text: str) -> list:
             "Return the test cases as a JSON array (list) with each test case containing the following attributes: "
             "Test_Case_ID, Test_Case_Name, Test_Case_Type, Pre_Condition, Actor_s, Test_Data, Step_Description, and Expected_Result. "
             "Test_Case_Type values are limited to: Mandatory, SCR Change, Boundary Test, Edge Case. For each test case, select the most appropriate Test_Case_Type value."
-            "Do not include any additional text, just the JSON array in text. Every attribute should be a string."
+            "Do not include any additional text, just the JSON array in text. Every attribute should be a string. If a test case read seems appropriate, you may append it to your output as-is."
             )}
         ]
     )

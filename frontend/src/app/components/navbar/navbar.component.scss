@@ -4,7 +4,7 @@
     justify-content: space-between;
     background-color: #fff;
     color: #0e1f3b;
-    padding-left: 10px;
+    padding: 0px 10px;
   }
   
   .navbar-left {
@@ -34,12 +34,36 @@
   .navbar-right {
     display: flex;
     align-items: center;
+    gap: 10px; /* Adds spacing between elements */
   }
   
-  input {
-    padding: 5px;
-    width: 200px;
-    border-radius: 5px;
-    border: none;
-  }
-  
+  /* Search Bar Container */
+.search-container {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.search-container input {
+  padding: 5px 5px 5px 30px; /* Adds left padding for icon space */
+  width: 200px;
+  border-radius: 5px;
+  border: 1px solid #ccc;
+}
+
+/* Search Icon Inside Input */
+.search-icon {
+  position: absolute;
+  left: 8px;
+  width: 18px;
+  height: 18px;
+  color: #888;
+}
+
+/* Standalone Icon */
+.standalone-icon {
+  width: 24px;
+  height: 24px;
+  color: #0e1f3b;
+  cursor: pointer;
+}

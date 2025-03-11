@@ -1,10 +1,24 @@
 <h1>{{ projectName }}</h1>
 <!-- Textarea and Edit Button -->
+<!-- Description Container -->
 <div class="description-container">
-  <textarea [class.editable]="isEditing" [readOnly]="!isEditing" placeholder="Add project description..."></textarea>
-  <button *ngIf="!isEditing" (click)="startEditing()">Edit</button>
-  <button *ngIf="isEditing" (click)="saveDescription()">Save</button>
+  <div 
+    class="description-text" 
+    *ngIf="!isEditing"
+    (click)="startEditing()"
+  >
+    {{ description || 'Add project description...' }}
+  </div>
+
+  <textarea 
+    #descriptionInput
+    *ngIf="isEditing"
+    [(ngModel)]="description"
+    (blur)="saveDescription()"
+    placeholder="Add project description..."
+  ></textarea>
 </div>
+
 
 <section id="modules">
   <h2>Modules</h2>

@@ -25,53 +25,65 @@
     <p>Processing... Please wait.</p>
   </div>
 
-  <!-- Test Cases Table (Always Displayed) -->
-  <table>
-    <thead>
-      <tr>
-        <th>Test Case ID</th>
-        <th>Test Case Name</th>
-        <th>Test Case Type</th>
-        <th>Pre-Condition</th>
-        <th>Actor(s)</th>
-        <th>Test Data</th>
-        <th>Step Description</th>
-        <th>Expected Result</th>
-        <th>Actions</th>
+  <div class="table-container">
+    <table class="test-case-table">
+      <colgroup>
+        <col style="width: 10%;">  <!-- Test Case ID -->
+        <col style="width: auto;"> <!-- Test Case Name (auto-adjust) -->
+        <col style="width: 12%;">  <!-- Test Case Type -->
+        <col style="width: auto;"> <!-- Pre-Condition -->
+        <col style="width: 12%;">  <!-- Actor(s) -->
+        <col style="width: auto;"> <!-- Test Data -->
+        <col style="width: auto;"> <!-- Step Description -->
+        <col style="width: auto;"> <!-- Expected Result -->
+        <col style="width: 8%;">   <!-- Delete Button -->
+      </colgroup>
+      <thead>
+        <tr>
+          <th>Test Case ID</th>
+          <th>Test Case Name</th>
+          <th>Test Case Type</th>
+          <th>Pre-Condition</th>
+          <th>Actor(s)</th>
+          <th>Test Data</th>
+          <th>Step Description</th>
+          <th>Expected Result</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let testCase of editedTestCases; let i = index">
+        <td>
+          <textarea [(ngModel)]="editedTestCases[i]['Test_Case_ID']"></textarea>
+        </td>
+        <td>
+          <textarea [(ngModel)]="editedTestCases[i]['Test_Case_Name']"></textarea>
+        </td>
+        <td>
+          <textarea [(ngModel)]="editedTestCases[i]['Test_Case_Type']"></textarea>
+        </td>
+        <td>
+          <textarea [(ngModel)]="editedTestCases[i]['Pre_Condition']"></textarea>
+        </td>
+        <td>
+          <textarea [(ngModel)]="editedTestCases[i]['Actor_s']"></textarea>
+        </td>
+        <td>
+          <textarea [(ngModel)]="editedTestCases[i]['Test_Data']"></textarea>
+        </td>
+        <td>
+          <textarea [(ngModel)]="editedTestCases[i]['Step_Description']"></textarea>
+        </td>
+        <td>
+          <textarea [(ngModel)]="editedTestCases[i]['Expected_Result']"></textarea>
+        </td>
+        <td>
+          <button (click)="deleteRow(i)">Delete</button>
+        </td>
       </tr>
-    </thead>
-    <tbody>
-      <tr *ngFor="let testCase of editedTestCases; let i = index">
-      <td>
-        <textarea [(ngModel)]="editedTestCases[i]['Test_Case_ID']"></textarea>
-      </td>
-      <td>
-        <textarea [(ngModel)]="editedTestCases[i]['Test_Case_Name']"></textarea>
-      </td>
-      <td>
-        <textarea [(ngModel)]="editedTestCases[i]['Test_Case_Type']"></textarea>
-      </td>
-      <td>
-        <textarea [(ngModel)]="editedTestCases[i]['Pre_Condition']"></textarea>
-      </td>
-      <td>
-        <textarea [(ngModel)]="editedTestCases[i]['Actor_s']"></textarea>
-      </td>
-      <td>
-        <textarea [(ngModel)]="editedTestCases[i]['Test_Data']"></textarea>
-      </td>
-      <td>
-        <textarea [(ngModel)]="editedTestCases[i]['Step_Description']"></textarea>
-      </td>
-      <td>
-        <textarea [(ngModel)]="editedTestCases[i]['Expected_Result']"></textarea>
-      </td>
-      <td>
-        <button (click)="deleteRow(i)">Delete</button>
-      </td>
-    </tr>
-  </tbody>
-</table>
+    </tbody>
+  </table>
+  </div>
 
   <!-- Add Row Button -->
   <button (click)="addRow()">Add Row</button>

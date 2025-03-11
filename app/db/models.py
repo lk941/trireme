@@ -16,7 +16,7 @@ class Project(Base):
     # Relationship to modules
     modules = relationship("Module", back_populates="project")
 
-
+# script content here refers to mandatory steps for module
 class Module(Base):
     __tablename__ = "modules"
 
@@ -37,16 +37,17 @@ class Module(Base):
         UniqueConstraint("project_id", "project_specific_id", name="uq_project_specific_id"),
     )
 
+# script content here is for script versions, etc SCR docs or optimised mandatory steps
 class TestScripts(Base):
     __tablename__ = "test_scripts"
 
     id = Column(Integer, primary_key=True, index=True)
     project_id = Column(Integer, ForeignKey("projects.id"), index=True)  
-    module_id = Column(Integer, ForeignKey("modules.id"), index=True)  
+    project_specific_id = Column(Integer, index=True)  # Sequential within project
     name = Column(String, index=True, nullable=False)
-    script_content = Column(JSON, nullable=True)
-
     created_at = Column(DateTime, default=func.now())
+    updated_at = Column(DateTime, default=func.now(), onupdate=func.now())
+    script_content = Column(JSON, nullable=True)
 
 
 class MandatoryTestCase(Base):

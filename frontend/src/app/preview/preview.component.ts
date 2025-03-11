@@ -24,11 +24,15 @@ export class PreviewComponent implements OnInit{
   breadcrumb = { projectName: '', module: '' };
   moduleTC: String | null = null; // Returns either name of file or no existing module test cases
 
+  // 10/3 sprint: fix table display
+
   constructor(private navbarService: NavbarService, private route: ActivatedRoute, private http: HttpClient, private router: Router) {}
 
   ngOnInit() {
     this.projectId = Number(this.route.snapshot.paramMap.get('pid'));
     this.moduleId = Number(this.route.snapshot.paramMap.get('mid'));
+
+    this.loadExistingTestCases()
 
     const navState = history.state;
 
@@ -47,6 +51,16 @@ export class PreviewComponent implements OnInit{
         this.file = navState.uploadedFile;
       }
     }
+  }
+
+  loadExistingTestCases(): void {
+    console.log(this.projectId)
+    this.http.get<any>(`http://localhost:8000/modules/${this.projectId}/${this.moduleId}`).subscribe(data => {
+      console.log(data.script_content)
+      this.testCases = JSON.parse(data.script_content) ?? []; 
+      this.editedTestCases = [...this.testCases];
+      console.log(this.editedTestCases);
+    });
   }
 
   navigateToSetup(projectId: number) {
@@ -106,6 +120,22 @@ export class PreviewComponent implements OnInit{
         (error) => {
           this.isProcessing = false;
           console.error('Error generating test cases:', error);
+        }
+      );
+  }
+
+  updateTestCases(): void {
+    const updatedData = { script_content: this.editedTestCases };
+
+    this.http.put(`http://localhost:8000/test-scripts/${this.projectId}/${this.moduleId}`, updatedData)
+      .subscribe(
+        response => {
+          console.log("Test cases updated successfully!", response);
+          alert("Test cases updated successfully!");
+        },
+        error => {
+          console.error("Error updating module test cases:", error);
+          alert("Failed to update module test cases.");
         }
       );
   }
