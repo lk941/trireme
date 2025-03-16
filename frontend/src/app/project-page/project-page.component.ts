@@ -22,6 +22,7 @@ export class ProjectPageComponent implements OnInit{
   projectId: number | null = null;
   projectName: string = '';
   modules: any[] = [];
+  suites: any[] = [];
   newModuleName: string = '';
   newSuiteName: string = '';
   isModalOpen: boolean = false;
@@ -50,6 +51,7 @@ export class ProjectPageComponent implements OnInit{
     }
 
     this.loadModules();
+    this.loadSuites();
   }
 
   startEditing(): void {
@@ -64,6 +66,13 @@ export class ProjectPageComponent implements OnInit{
     console.log(this.projectId)
     this.http.get<any[]>(`http://localhost:8000/modules/${this.projectId}`).subscribe(data => {
       this.modules = data;
+    });
+  }
+
+  loadSuites(): void {
+    console.log(this.projectId)
+    this.http.get<any[]>(`http://localhost:8000/suites/${this.projectId}`).subscribe(data => {
+      this.suites = data;
     });
   }
 
@@ -96,10 +105,11 @@ export class ProjectPageComponent implements OnInit{
 
   createSuite(): void {
     if (this.newSuiteName.trim()) {
-      this.http.post('http://localhost:8000/suite', { project_id: this.projectId, name: this.newSuiteName, description: '' })
-        .subscribe(() => {
+      this.http.post<{ id: number }>('http://localhost:8000/suites', { project_id: this.projectId, name: this.newSuiteName, description: '' })
+        .subscribe((response) => {
+          const suiteId = response.id;
           this.closeMandModal();
-          this.router.navigate(['/project-test-suite', this.projectName, this.projectId, this.newSuiteName]);
+          this.router.navigate(['/project-test-suite', this.projectName, this.projectId, this.newSuiteName, suiteId]);
           this.newSuiteName = '';
         });
     }
@@ -107,6 +117,10 @@ export class ProjectPageComponent implements OnInit{
 
   navigateToProject(projectId: number, moduleName: String, projectSpecificId: number): void {
     this.router.navigate(['/preview', this.breadcrumb.projectName , projectId, moduleName, projectSpecificId]);
+  }
+
+  navigateToSuite(projectId: number, suiteName: String, projectSpecificId: number): void {
+    this.router.navigate(['/preview', this.breadcrumb.projectName , projectId, suiteName, projectSpecificId]);
   }
 
   navigateToSetup(projectId: number) {

@@ -34,7 +34,10 @@
 <section id="mandatory-suites">
   <h2>Mandatory Test Suites</h2>
   <div class="projects-container">
-    
+    <div class="project-card" *ngFor="let suite of suites" (click)="navigateToSuite(suite.project_id, suite.name, suite.project_specific_id)">
+      <img src="assets/icons/folder.png" alt="Project Folder">
+      <p>{{ suite.name }}</p>
+    </div>
   </div>
   <button (click)="openMandModal()">Create Mandatory Test Suite</button>
 </section>

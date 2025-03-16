@@ -336,8 +336,22 @@ def update_module_script_content(
     
 ## Suites
 
+class SuiteResponse(BaseModel):
+    id: int
+    project_id: int
+    project_specific_id: int
+    name: str
+    description: str
+    created_at: datetime
+    updated_at: datetime
+    script_content: str
+
+    class Config:
+        orm_mode = True
+
+
 ### GET suites by `project_id` ###
-@app.get("/suites/{project_id}", response_model=list[ModuleResponse])
+@app.get("/suites/{project_id}", response_model=list[SuiteResponse])
 def get_suites_by_project_id(project_id: int, db: Session = Depends(get_db)):
     suite = db.query(Suite).filter(
         Suite.project_id == project_id,
@@ -349,6 +363,45 @@ def get_suites_by_project_id(project_id: int, db: Session = Depends(get_db)):
     
     return suite
 
+### POST: Create a new module (auto-generates `project_specific_id`) ###
+@app.post("/suites", response_model=SuiteResponse)
+def create_suite(module: ModuleCreate, db: Session = Depends(get_db)):
+    try:
+        # Get the latest `project_specific_id` for the given project
+        latest_module = (
+            db.query(Suite)
+            .filter(Suite.project_id == module.project_id)
+            .order_by(Suite.project_specific_id.desc())
+            .first()
+        )
+        new_project_specific_id = (latest_module.project_specific_id + 1) if latest_module else 1
+
+        new_module = Suite(
+            project_id=module.project_id,
+            project_specific_id=new_project_specific_id,
+            name=module.name,
+            description=module.description,
+            created_at=datetime.utcnow(),
+            updated_at=datetime.utcnow(),
+            script_content="",
+        )
+
+        db.add(new_module)
+        db.commit()
+        db.refresh(new_module)
+        return new_module
+
+    except Exception as e:
+        db.rollback()
+        logging.error(f"Error creating module: {e}")
+        raise HTTPException(status_code=500, detail="Error creating module")
+    
+    
+class ModuleUpdateRequest(BaseModel):
+    script_content: List[dict]  # Assuming script_content is a list of test cases
+
+    class Config:
+        orm_mode = True
 
 # TCs
 
