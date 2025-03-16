@@ -5,6 +5,7 @@ import { FormsModule } from '@angular/forms';
 import { CommonModule } from '@angular/common';
 import { ActivatedRoute, Router } from '@angular/router';
 import { NavbarService } from '../services/navbar.service';
+import { MatSnackBar } from '@angular/material/snack-bar';
 
 
 @Component({
@@ -36,7 +37,7 @@ export class ModuleMandatoryComponent implements OnInit{
     }
   ];
 
-  constructor(private navbarService: NavbarService, private route: ActivatedRoute, private http: HttpClient, private router: Router) {}
+  constructor(private navbarService: NavbarService, private route: ActivatedRoute, private http: HttpClient, private router: Router, private snackBar: MatSnackBar) {}
 
   navigateToSetup(projectId: number) {
     this.router.navigate(['/automation-setup', projectId], {
@@ -134,15 +135,15 @@ export class ModuleMandatoryComponent implements OnInit{
   updateModuleTestCases(): void {
     const updatedData = { script_content: this.editedTestCases };
 
-    this.http.put(`http://localhost:8000/modules/${this.projectId}/${this.moduleId}`, updatedData)
+    this.http.put(`http://localhost:8000/modules/${this.projectId}/${this.moduleId}/update_mtc`, updatedData)
       .subscribe(
         response => {
           console.log("Module test cases updated successfully!", response);
-          alert("Module test cases updated successfully!");
+          this.showSnackbar("Module test cases updated successfully!", "success");
         },
         error => {
           console.error("Error updating module test cases:", error);
-          alert("Failed to update module test cases.");
+          this.showSnackbar("Failed to update module test cases.", "error");
         }
       );
   }
@@ -174,4 +175,14 @@ export class ModuleMandatoryComponent implements OnInit{
         }
       );
   }
+
+  showSnackbar(message: string, type: string): void {
+    this.snackBar.open(message, 'Close', {
+      duration: 3000,
+      horizontalPosition: 'right',
+      verticalPosition: 'top',
+      panelClass: type === "success" ? 'snackbar-success' : 'snackbar-error'
+    });
+  }
+  
 }

@@ -7,15 +7,14 @@ import { ActivatedRoute, Router } from '@angular/router';
 import { NavbarService } from '../services/navbar.service';
 
 @Component({
-  selector: 'app-preview',
+  selector: 'app-project-test-suite',
   standalone: true,
   imports: [FormsModule, HttpClientModule, CommonModule],
-  templateUrl: './preview.component.html',
-  styleUrl: './preview.component.scss'
+  templateUrl: './project-test-suite.component.html',
+  styleUrl: './project-test-suite.component.css'
 })
-export class PreviewComponent implements OnInit{
+export class ProjectTestSuiteComponent implements OnInit{
   testCases: any[] = []; // Stores the generated test cases
-  editedTestCases: any[] = []; // Stores the edited test cases
   file: File | null = null; // Stores the uploaded file
   isProcessing: boolean = false; // Tracks loading state
   isDataLoaded: boolean = false; // Tracks if data is loaded for table display
@@ -23,14 +22,32 @@ export class PreviewComponent implements OnInit{
   moduleId: number | null = null;
   breadcrumb = { projectName: '', module: '' };
   moduleTC: String | null = null; // Returns either name of file or no existing module test cases
+  editedTestCases: any[] = [
+    {
+      Test_Case_ID: '',
+      Test_Case_Name: '',
+      Test_Case_Type: '',
+      Pre_Condition: '',
+      Actor_s: '',
+      Test_Data: '',
+      Step_Description: '',
+      Expected_Result: ''
+    }
+  ];
 
   constructor(private navbarService: NavbarService, private route: ActivatedRoute, private http: HttpClient, private router: Router) {}
+
+  navigateToSetup(projectId: number) {
+    this.router.navigate(['/automation-setup', projectId], {
+      state: { testData: this.editedTestCases, uploadedFile: this.file }
+    });
+  }
 
   ngOnInit() {
     this.projectId = Number(this.route.snapshot.paramMap.get('pid'));
     this.moduleId = Number(this.route.snapshot.paramMap.get('mid'));
 
-    this.loadExistingTestCases()
+    this.loadModuleTestCases()
 
     const navState = history.state;
 
@@ -51,23 +68,14 @@ export class PreviewComponent implements OnInit{
     }
   }
 
-  loadExistingTestCases(): void {
+  loadModuleTestCases(): void {
+    console.log(this.projectId)
     this.http.get<any>(`http://localhost:8000/modules/${this.projectId}/${this.moduleId}`).subscribe(data => {
-      console.log(data.scr_update)
-      this.testCases = JSON.parse(data.scr_update) ?? []; 
+      console.log(data.script_content)
+      this.testCases = JSON.parse(data.script_content) ?? []; 
       this.editedTestCases = [...this.testCases];
       console.log(this.editedTestCases);
     });
-  }
-
-  navigateToSetup(projectId: number) {
-    this.router.navigate(['/automation-setup', projectId], {
-      state: { testData: this.editedTestCases, uploadedFile: this.file }
-    });
-  }
-
-  navigateToMandatory() {
-    this.router.navigate(['/module-mandatory', this.breadcrumb.projectName , this.projectId, this.breadcrumb.module, this.moduleId]);
   }
 
 
@@ -76,6 +84,7 @@ export class PreviewComponent implements OnInit{
     const target = event.target as HTMLInputElement;
     this.file = target.files?.[0] || null;
   }
+  
 
   addRow(): void {
     const newTestCase = {
@@ -121,14 +130,14 @@ export class PreviewComponent implements OnInit{
       );
   }
 
-  updateTestCases(): void {
+  updateModuleTestCases(): void {
     const updatedData = { script_content: this.editedTestCases };
 
-    this.http.put(`http://localhost:8000/modules/${this.projectId}/${this.moduleId}/update_ttc`, updatedData)
+    this.http.put(`http://localhost:8000/modules/${this.projectId}/${this.moduleId}`, updatedData)
       .subscribe(
         response => {
-          console.log("Test cases updated successfully!", response);
-          alert("Test cases updated successfully!");
+          console.log("Module test cases updated successfully!", response);
+          alert("Module test cases updated successfully!");
         },
         error => {
           console.error("Error updating module test cases:", error);
@@ -136,6 +145,7 @@ export class PreviewComponent implements OnInit{
         }
       );
   }
+
 
   onDownload(): void {
     this.isProcessing = true;
@@ -164,3 +174,4 @@ export class PreviewComponent implements OnInit{
       );
   }
 }
+

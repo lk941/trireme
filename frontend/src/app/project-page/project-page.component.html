@@ -36,24 +36,24 @@
   <div class="projects-container">
     
   </div>
-  <button (click)="openModal()">Create Mandatory Test Suite</button>
+  <button (click)="openMandModal()">Create Mandatory Test Suite</button>
 </section>
 
 <div *ngIf="isModalOpen" class="modal">
   <div class="modal-content">
     <span class="close" (click)="closeModal()">&times;</span>
     <h2>Create New Module</h2>
-    <input type="text" [(ngModel)]="newModuleName" placeholder="Enter test suite name">
+    <input type="text" [(ngModel)]="newModuleName" placeholder="Enter module name">
     <button (click)="createModule()">Submit</button>
   </div>
 </div>
 
 <div *ngIf="isModalMandOpen" class="modal">
   <div class="modal-content">
-    <span class="close" (click)="closeModal()">&times;</span>
+    <span class="close" (click)="closeMandModal()">&times;</span>
     <h2>Create New Mandatory Test Suite</h2>
-    <input type="text" [(ngModel)]="newModuleName" placeholder="Enter test suite name">
-    <button (click)="createModule()">Submit</button>
+    <input type="text" [(ngModel)]="newSuiteName" placeholder="Enter test suite name">
+    <button (click)="createSuite()">Submit</button>
   </div>
 </div>
 

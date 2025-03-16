@@ -1,49 +1,30 @@
 <div>
-  <h1>{{ breadcrumb.projectName }} {{ breadcrumb.module }}</h1>
-
-  <p> Set up module tests!  </p>
-  <ol>
-    <li> Upload or define basic test steps for this module (navigate to Module Mandatory Test Steps)</li>
-    <li> Once saved, upload an SCR document. Test scripts generated will add on to the mandatory test steps and override outdated information.</li>
-  </ol>
-  <div class="projects-container">
-    <button (click)=navigateToMandatory()> Module Mandatory Test Steps </button>
-  </div>
-  <!-- <div *ngIf="moduleTC">
-    <div class="projects-container">
-
+    <h1>{{ breadcrumb.projectName }} {{ breadcrumb.module }} Mandatory Tests</h1>
+  
+    <p> This page is meant to contain the basic steps to test this module. <br/> 
+      Upload existing mandatory tests for this module, or create new ones for the basic test steps.</p>
+  
+    <h2>Mandatory Test Cases</h2>
+  
+    <!-- File Upload -->
+    <div>
+      <label for="file-upload">Upload a file:</label>
+      <input
+        id="file-upload"
+        type="file"
+        (change)="onFileChange($event)"
+        accept=".docx, .xlsx"
+      />
+      <button (click)="onSubmit($event)" [disabled]="!file || isProcessing">
+        Generate Test Cases
+      </button>
     </div>
-  </div>
-  <div *ngIf="moduleTC == null">
-    <p> This module has no existing test scripts</p>
-    <div class="projects-container">
-      <button (click)=navigateToMandatory()> + Add Module Test Scripts (Mandatory Steps) </button>
+  
+    <!-- Loading Spinner -->
+    <div *ngIf="isProcessing">
+      <p>Processing... Please wait.</p>
     </div>
-  </div> -->
-
-  <h2>Preview and Edit Test Cases</h2>
-
-  <!-- File Upload -->
-  <div>
-    <label for="file-upload">Upload a file:</label>
-    <input
-      id="file-upload"
-      type="file"
-      (change)="onFileChange($event)"
-      accept=".docx, .xlsx"
-    />
-    <button (click)="onSubmit($event)" [disabled]="!file || isProcessing">
-      Generate Test Cases
-    </button>
-  </div>
-
-  <!-- Loading Spinner -->
-  <div *ngIf="isProcessing">
-    <p>Processing... Please wait.</p>
-  </div>
-
-  <!-- Test Cases Table -->
-  <div *ngIf="testCases.length > 0">
+  
     <div class="table-container">
       <table class="test-case-table">
         <colgroup>
@@ -103,23 +84,21 @@
       </tbody>
     </table>
     </div>
-
+  
     <!-- Add Row Button -->
     <button (click)="addRow()">Add Row</button>
-
-    <!-- Download Button -->
-    <button (click)="updateTestCases()" [disabled]="isProcessing">
+  
+    <!-- Download Buttons -->
+    <button (click)="updateModuleTestCases()" [disabled]="isProcessing">
       Save
     </button>
-
-    <!-- Download Button -->
     <button (click)="onDownload()" [disabled]="isProcessing">
       Download Excel
     </button>
-    
+  
     <!-- Redirect to test setup -->
     <button *ngIf="projectId" (click)="navigateToSetup(projectId)" [disabled]="!projectId">
       Setup Test Automation
     </button>
   </div>
-</div>
+  

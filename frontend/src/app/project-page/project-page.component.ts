@@ -23,6 +23,7 @@ export class ProjectPageComponent implements OnInit{
   projectName: string = '';
   modules: any[] = [];
   newModuleName: string = '';
+  newSuiteName: string = '';
   isModalOpen: boolean = false;
   isModalMandOpen: boolean = false;
   breadcrumb = { projectName: '', module: '' };
@@ -89,6 +90,17 @@ export class ProjectPageComponent implements OnInit{
           this.loadModules();
           this.closeModal();
           this.newModuleName = '';
+        });
+    }
+  }
+
+  createSuite(): void {
+    if (this.newSuiteName.trim()) {
+      this.http.post('http://localhost:8000/suite', { project_id: this.projectId, name: this.newSuiteName, description: '' })
+        .subscribe(() => {
+          this.closeMandModal();
+          this.router.navigate(['/project-test-suite', this.projectName, this.projectId, this.newSuiteName]);
+          this.newSuiteName = '';
         });
     }
   }

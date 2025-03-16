@@ -64,7 +64,7 @@ if CONFIG_MODE == "docker":
     TEMPLATE_PATH = BASE_DIR / "testdata" / "DPP2_Template.xlsx"
     OUTPUT_PATH = BASE_DIR / "generateddata" / "updated_test_cases.xlsx"
     from app.db.database import SessionLocal, engine, Base
-    from app.db.models import Project, Module, TestScripts
+    from app.db.models import Project, Module, TestScripts, Suite
     print(TEMPLATE_PATH)
 else:
     STATIC_DIR = BASE_DIR / "templates"
@@ -170,6 +170,7 @@ class ModuleResponse(BaseModel):
     created_at: datetime
     updated_at: datetime
     script_content: str
+    scr_update: str
 
     class Config:
         orm_mode = True
@@ -245,7 +246,8 @@ def create_module(module: ModuleCreate, db: Session = Depends(get_db)):
             description=module.description,
             created_at=datetime.utcnow(),
             updated_at=datetime.utcnow(),
-            script_content=""
+            script_content="",
+            scr_update=""
         )
 
         db.add(new_module)
@@ -266,7 +268,7 @@ class ModuleUpdateRequest(BaseModel):
         orm_mode = True
         
     
-@app.put("/modules/{project_id}/{project_specific_id}", response_model=dict)
+@app.put("/modules/{project_id}/{project_specific_id}/update_mtc", response_model=dict)
 def update_module_script_content(
     project_id: int,
     project_specific_id: int,
@@ -299,22 +301,101 @@ def update_module_script_content(
         raise HTTPException(status_code=500, detail="Database error while updating module")
     
     
+@app.put("/modules/{project_id}/{project_specific_id}/update_ttc", response_model=dict)
+def update_module_script_content(
+    project_id: int,
+    project_specific_id: int,
+    request: ModuleUpdateRequest,
+    db: Session = Depends(get_db),
+):
+    # Fetch the module
+    module = db.query(Module).filter(
+        Module.project_id == project_id,
+        Module.project_specific_id == project_specific_id
+    ).first()
+
+    if not module:
+        logging.error(f"Module {project_specific_id} not found in project {project_id}.")
+        raise HTTPException(status_code=404, detail="Module not found in the specified project")
+
+    try:
+        # Convert script_content to JSON format
+        module.scr_update = json.dumps(request.script_content)  # Convert Python object to JSON string
+
+        # Commit changes
+        db.commit()
+        db.refresh(module)
+
+        return {"message": "Module script_content updated successfully!"}
+    
+    except Exception as e:
+        db.rollback()
+        logging.error(f"Database error: {e}")
+        raise HTTPException(status_code=500, detail="Database error while updating module")
+    
+    
+## Suites
+
+### GET suites by `project_id` ###
+@app.get("/suites/{project_id}", response_model=list[ModuleResponse])
+def get_suites_by_project_id(project_id: int, db: Session = Depends(get_db)):
+    suite = db.query(Suite).filter(
+        Suite.project_id == project_id,
+    ).all()
+
+    if not suite:
+        logging.error(f"project {project_id} not found.")
+        raise HTTPException(status_code=404, detail="Unknown suite in the specified project")
+    
+    return suite
+
+
+# TCs
+
+class TestScriptCreate(BaseModel):
+    id: int
+    module_id: int
+    module_specific_id: int
+    name: str
+    description: str
+    created_at: datetime
+    updated_at: datetime
+    script_content: str
+
+    class Config:
+        orm_mode = True
+        
+        
+class TestScriptResponse(BaseModel):
+    id: int
+    module_id: int
+    module_specific_id: int
+    name: str
+    description: str
+    created_at: datetime
+    updated_at: datetime
+    script_content: str
+
+    class Config:
+        orm_mode = True
+    
+    
 ### POST: Create a new ts (auto-generates `project_specific_id`) ###
-@app.post("/test-scripts", response_model=ModuleResponse)
-def create_test_scripts(module: ModuleCreate, db: Session = Depends(get_db)):
+@app.post("/test-scripts", response_model=TestScriptResponse)
+def create_test_scripts(module: TestScriptCreate, db: Session = Depends(get_db)):
     try:
         # Get the latest `project_specific_id` for the given project
         latest_module = (
             db.query(TestScripts)
-            .filter(TestScripts.project_id == module.project_id)
-            .order_by(Module.project_specific_id.desc())
+            .filter(TestScripts.module_id == module.id)
+            .order_by(TestScripts.module_specific_id.desc())
             .first()
         )
-        new_project_specific_id = (latest_module.project_specific_id + 1) if latest_module else 1
+        new_module_specific_id = (latest_module.module_specific_id + 1) if latest_module else 1
 
         new_module = TestScripts(
-            project_id=module.project_id,
-            project_specific_id=new_project_specific_id,
+            module_id=module.id,
+            module_specific_id=new_module_specific_id,
             name=module.name,
             description=module.description,
             created_at=datetime.utcnow(),
@@ -329,8 +410,26 @@ def create_test_scripts(module: ModuleCreate, db: Session = Depends(get_db)):
 
     except Exception as e:
         db.rollback()
-        logging.error(f"Error creating module: {e}")
-        raise HTTPException(status_code=500, detail="Error creating module")
+        logging.error(f"Error creating test script: {e}")
+        raise HTTPException(status_code=500, detail="Error creating test script")
+    
+    
+@app.get("/test-scripts/{module_id}/{module_specific_id}", response_model=TestScriptResponse)
+def get_test_script_by_project_specific_id(
+    project_id: int, 
+    project_specific_id: int, 
+    db: Session = Depends(get_db)
+):
+    module = db.query(TestScripts).filter(
+        TestScripts.project_id == project_id,
+        TestScripts.project_specific_id == project_specific_id
+    ).first()
+
+    if not module:
+        logging.error(f"Test Script {project_specific_id} not found in project {project_id}.")
+        raise HTTPException(status_code=404, detail="Test Script not found in the specified project")
+    
+    return module
     
     
 @app.put("/test-scripts/{project_id}/{project_specific_id}", response_model=dict)
@@ -347,7 +446,7 @@ def update_module_script_content(
     ).first()
 
     if not module:
-        logging.error(f"Module {project_specific_id} not found in project {project_id}.")
+        logging.error(f"Test Script {project_specific_id} not found in project {project_id}.")
         raise HTTPException(status_code=404, detail="Module not found in the specified project")
 
     try:
@@ -515,7 +614,7 @@ async def generate_test_scripts(document_text: str) -> list:
             "Limit your response to only the test script contents in JSON format. "
             "Return the test cases as a JSON array (list) with each test case containing the following attributes: "
             "Test_Case_ID, Test_Case_Name, Test_Case_Type, Pre_Condition, Actor_s, Test_Data, Step_Description, and Expected_Result. "
-            "Test_Case_Type values are limited to: Mandatory, SCR Change, Boundary Test, Edge Case. For each test case, select the most appropriate Test_Case_Type value."
+            "Test_Case_Type values are limited to: Mandatory, SCR Change, Boundary Test, Edge Case, Exception Test. For each test case, select the most appropriate Test_Case_Type value."
             "Do not include any additional text, just the JSON array in text. Every attribute should be a string. If a test case read seems appropriate, you may append it to your output as-is."
             )}
         ]

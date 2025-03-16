@@ -4,7 +4,13 @@
     justify-content: space-between;
     background-color: #fff;
     color: #0e1f3b;
-    padding: 0px 10px;
+    padding: 5px 10px;
+    position: fixed; /* Fixes the navbar to the top */
+    top: 0; /* Aligns it to the top */
+    left: 0;
+    width: 100%; /* Ensures it spans the entire width */
+    z-index: 1000; /* Keeps it above other content */
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1); /* Optional: Adds a subtle shadow */
   }
   
   .navbar-left {
@@ -20,7 +26,7 @@
   
   .app-name {
     font-size: 17px;
-    font-weight: light;
+    font-weight: 600;
   }
   
   .breadcrumb {
