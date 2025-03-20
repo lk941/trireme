@@ -7,7 +7,7 @@
   
     <!-- Breadcrumb Navigation -->
     <div class="breadcrumb">
-      <span *ngIf="breadcrumb.projectName">{{ breadcrumb.projectName }} / </span>
+      <span *ngIf="breadcrumb.projectName" (click)="navigateToProject()">{{ breadcrumb.projectName }} / </span>
       <span *ngIf="breadcrumb.module">{{ breadcrumb.module }}</span>
     </div>
   
@@ -19,6 +19,12 @@
         </svg>
         
         <input type="text" placeholder="Search..." (input)="onSearch($event)" />
+        <!-- Dropdown with Search Results -->
+        <ul class="search-results" *ngIf="searchResults.length">
+          <li *ngFor="let result of searchResults" (click)="navigateTo(result.link)">
+            <a>{{ result.name }} ({{ result.type }})</a>
+          </li>
+        </ul>
       </div>
 
       <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="standalone-icon" (click)="navigateToDocumentation()">

@@ -1,0 +1,9 @@
+.project-card ul {
+    display: flex;
+    flex-direction: column; /* Stacks label and ul vertically */
+}
+
+.project-card:hover {
+    transform: 0;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+  }

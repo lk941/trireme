@@ -15,7 +15,18 @@ import { NavbarService } from '../services/navbar.service';
 })
 export class PreviewComponent implements OnInit{
   testCases: any[] = []; // Stores the generated test cases
-  editedTestCases: any[] = []; // Stores the edited test cases
+  editedTestCases: any[] = [
+    {
+      Test_Case_ID: '',
+      Test_Case_Name: '',
+      Test_Case_Type: '',
+      Pre_Condition: '',
+      Actor_s: '',
+      Test_Data: '',
+      Step_Description: '',
+      Expected_Result: ''
+    }
+  ];
   file: File | null = null; // Stores the uploaded file
   isProcessing: boolean = false; // Tracks loading state
   isDataLoaded: boolean = false; // Tracks if data is loaded for table display

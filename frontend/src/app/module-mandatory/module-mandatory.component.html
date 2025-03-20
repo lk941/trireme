@@ -4,6 +4,7 @@
   <p> This page is meant to contain the basic steps to test this module. <br/> 
     Upload existing mandatory tests for this module, or create new ones for the basic test steps.</p>
 
+  <div class="preview">
   <h2>Mandatory Test Cases</h2>
 
   <!-- File Upload -->
@@ -15,6 +16,14 @@
       (change)="onFileChange($event)"
       accept=".docx, .xlsx"
     />
+    <br />
+    <label for="sheet-name">(Optional) Input Sheet name:</label>
+    <input
+      id="sheet-name"
+      type="text"
+      (change)="onFileChange($event)"
+    />
+    <br />
     <button (click)="onSubmit($event)" [disabled]="!file || isProcessing">
       Generate Test Cases
     </button>
@@ -100,4 +109,5 @@
   <button *ngIf="projectId" (click)="navigateToSetup(projectId)" [disabled]="!projectId">
     Setup Test Automation
   </button>
+</div>
 </div>

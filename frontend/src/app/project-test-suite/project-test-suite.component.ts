@@ -11,15 +11,23 @@ import { NavbarService } from '../services/navbar.service';
   standalone: true,
   imports: [FormsModule, HttpClientModule, CommonModule],
   templateUrl: './project-test-suite.component.html',
-  styleUrl: './project-test-suite.component.css'
+  styleUrl: './project-test-suite.component.scss'
 })
 export class ProjectTestSuiteComponent implements OnInit{
   testCases: any[] = []; // Stores the generated test cases
+  selectedModules: string[] = [];
+  optimizationType: string = 'manual';
+  modules: any[] = []; 
   file: File | null = null; // Stores the uploaded file
   isProcessing: boolean = false; // Tracks loading state
   isDataLoaded: boolean = false; // Tracks if data is loaded for table display
   projectId: number | null = null;
   moduleId: number | null = null;
+
+  showModuleError: boolean = false;
+  allSelected = false;
+  selectAllText = 'Select All (0 modules)';
+
   breadcrumb = { projectName: '', module: '' };
   moduleTC: String | null = null; // Returns either name of file or no existing module test cases
   editedTestCases: any[] = [
@@ -46,8 +54,12 @@ export class ProjectTestSuiteComponent implements OnInit{
   ngOnInit() {
     this.projectId = Number(this.route.snapshot.paramMap.get('pid'));
     this.moduleId = Number(this.route.snapshot.paramMap.get('mid'));
+    this.loadModules();
 
     this.loadModuleTestCases()
+
+    // Select all modules by default
+    this.selectedModules = this.modules.map(module => module.id);
 
     const navState = history.state;
 
@@ -66,6 +78,39 @@ export class ProjectTestSuiteComponent implements OnInit{
         this.file = navState.uploadedFile;
       }
     }
+  }
+
+  validateModuleSelection() {
+    this.allSelected = this.modules.every(module => module.selected);
+    this.updateSelectAllText();
+    this.showModuleError = this.modules.every(module => !module.selected);
+  }
+
+  toggleSelectAll() {
+    this.allSelected = !this.allSelected;
+    this.modules.forEach(module => module.selected = this.allSelected);
+    this.updateSelectAllText();
+    this.validateModuleSelection();
+  }
+
+  updateSelectAllText() {
+    const selectedCount = this.modules.filter(module => module.selected).length;
+    if (this.allSelected) {
+      this.selectAllText = `Deselect All (${this.modules.length} modules)`;
+    } else {
+      this.selectAllText = `Select All (${this.modules.length} modules)`;
+    }
+  }
+
+  getSelectedModules() {
+    return this.modules.filter(module => module.selected).map(module => module.id);
+  }
+
+  loadModules(): void {
+    console.log(this.projectId)
+    this.http.get<any[]>(`http://localhost:8000/modules/${this.projectId}`).subscribe(data => {
+      this.modules = data;
+    });
   }
 
   loadModuleTestCases(): void {
@@ -108,26 +153,57 @@ export class ProjectTestSuiteComponent implements OnInit{
   // Submits the file to generate test cases
   onSubmit(event: Event): void {
     event.preventDefault();
-    if (!this.file) return;
-
+  
+    // Retrieve selected modules and test strategy
+    const { selectedModules, testStrategy } = this.getTestSuiteDetails();
+  
+    if (selectedModules.length === 0) {
+      this.showModuleError = true;
+      return;
+    }
+  
+    this.showModuleError = false;
     this.isProcessing = true;
-
+  
     const formData = new FormData();
-    formData.append('file', this.file);
+    formData.append('selectedModules', JSON.stringify(selectedModules));
+    formData.append('testStrategy', testStrategy);
 
-    this.http.post('http://127.0.0.1:8000/generate-test-cases', formData)
-      .subscribe(
-        (response: any) => {
-          this.isProcessing = false;
-          this.testCases = response.test_cases;
-          this.editedTestCases = [...this.testCases]; // Copy for editing
-          this.isDataLoaded = true;  // Set flag to show table after generation
-        },
-        (error) => {
-          this.isProcessing = false;
-          console.error('Error generating test cases:', error);
-        }
-      );
+    alert(selectedModules);
+  
+    // this.http.post('http://127.0.0.1:8000/generate-test-cases', formData)
+    //   .subscribe(
+    //     (response: any) => {
+    //       this.isProcessing = false;
+    //       this.testCases = response.test_cases;
+    //       this.editedTestCases = [...this.testCases]; // Copy for editing
+    //       this.isDataLoaded = true;  // Set flag to show table after generation
+    //     },
+    //     (error) => {
+    //       this.isProcessing = false;
+    //       console.error('Error generating test cases:', error);
+    //     }
+    //   );
+  }
+  
+
+  getTestSuiteDetails(): { selectedModules: string[], testStrategy: string } {
+    // Retrieve selected modules
+    const selectedModules = this.modules
+      .filter(module => module.selected)
+      .map(module => module.scr_update || module.script_content); // or module.name if you prefer names
+  
+    // Determine test strategy based on radio button selection
+    let testStrategy = '';
+    if (this.optimizationType === 'automated') {
+      testStrategy =
+        "Generate mandatory, exception, targeted, boundary and edge cases with the goal of strategically maximizing test scope for automation.";
+    } else if (this.optimizationType === 'manual') {
+      testStrategy =
+        "Generate mandatory, exception, and targeted test cases only with the goal of optimizing manual testing time.";
+    }
+  
+    return { selectedModules, testStrategy };
   }
 
   updateModuleTestCases(): void {

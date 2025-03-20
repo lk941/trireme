@@ -4,13 +4,15 @@ import { HttpClientModule } from '@angular/common/http';
 import { FormsModule } from '@angular/forms';
 import { CommonModule } from '@angular/common';
 import { Router } from '@angular/router';
+import { AppModule } from '../app.module';
+
 
 @Component({
   selector: 'app-home',
   templateUrl: './home.component.html',
   styleUrls: ['./home.component.scss'],
   standalone: true,
-  imports: [FormsModule, HttpClientModule, CommonModule],
+  imports: [FormsModule, HttpClientModule, CommonModule, AppModule],
 })
 export class HomeComponent implements OnInit {
 
@@ -52,4 +54,26 @@ export class HomeComponent implements OnInit {
   navigateToProject(projectName: String, projectId: number): void {
     this.router.navigate(['/project-page', projectName, projectId]);
   }
+
+  renameProject(project: any) {
+    const newName = prompt('Enter new project name:', project.name);
+    if (newName) {
+      project.name = newName;
+    }
+  }
+
+  deleteProject(projectId: number): void {
+    this.http.delete(`http://localhost:8000/projects/${projectId}`).subscribe({
+      next: (response: any) => {
+        console.log(response.message); // Log the success message
+        // Optionally update local state if needed
+        this.projects = this.projects.filter(p => p.id !== projectId);
+        console.log('Updated projects:', this.projects);
+      },
+      error: (error) => {
+        console.error('Error deleting project:', error);
+      }
+    });
+  }
+  
 }

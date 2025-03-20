@@ -4,36 +4,34 @@ table {
   margin-top: 20px;
 }
 
-// th,
-// td {
-//   border: 1px solid #ddd;
-//   padding: 8px;
-//   text-align: left;
-// }
+.project-card {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  cursor: pointer;
+  border: 1px solid #ddd;
+  padding: 10px 20px;
+  border-radius: 8px;
+  transition: transform 0.2s;
+  gap: 20px;
+  background-color: #0e1f3b;
+  color: white;
+}
 
-// th {
-//   background-color: #f2f2f2;
-// }
+.project-card img {
+  width: 60px;
+  height: 60px;
+}
 
-// input {
-//   width: 100%;
-//   padding: 5px;
-//   box-sizing: border-box;
-// }
+.project-card p {
+  margin-top: 10px;
+  font-weight: bold;
+}
 
-// button {
-//   margin-top: 20px;
-//   margin-right:10px;
-//   padding: 10px 20px;
-//   background-color: #007bff;
-//   color: white;
-//   border: none;
-//   cursor: pointer;
-// }
-
-// button:hover {
-//   background-color: #0056b3;
-// }
+.project-card:hover {
+  transform: scale(1.05);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+}
 
 button:disabled {
   background-color: #cccccc;

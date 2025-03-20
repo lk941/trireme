@@ -7,25 +7,15 @@
     <li> Once saved, upload an SCR document. Test scripts generated will add on to the mandatory test steps and override outdated information.</li>
   </ol>
   <div class="projects-container">
-    <button (click)=navigateToMandatory()> Module Mandatory Test Steps </button>
+    <button class="project-card" (click)=navigateToMandatory()> Module Mandatory Test Steps </button>
   </div>
-  <!-- <div *ngIf="moduleTC">
-    <div class="projects-container">
 
-    </div>
-  </div>
-  <div *ngIf="moduleTC == null">
-    <p> This module has no existing test scripts</p>
-    <div class="projects-container">
-      <button (click)=navigateToMandatory()> + Add Module Test Scripts (Mandatory Steps) </button>
-    </div>
-  </div> -->
-
-  <h2>Preview and Edit Test Cases</h2>
-
+  <div class="preview">
+  <h2>Latest Functionality Update</h2>
   <!-- File Upload -->
   <div>
-    <label for="file-upload">Upload a file:</label>
+    <label for="file-upload">Upload Software Change Request (.docx):</label>
+    <br />
     <input
       id="file-upload"
       type="file"
@@ -43,7 +33,7 @@
   </div>
 
   <!-- Test Cases Table -->
-  <div *ngIf="testCases.length > 0">
+  <!-- <div *ngIf="testCases.length > 0"> -->
     <div class="table-container">
       <table class="test-case-table">
         <colgroup>

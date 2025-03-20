@@ -3,6 +3,17 @@
   <h2>All Projects</h2>
   <div class="projects-container">
     <div class="project-card" *ngFor="let project of projects" (click)="navigateToProject(project.name, project.id)">
+
+      <div class="menu-container" (click)="$event.stopPropagation()">
+        <button mat-icon-button [matMenuTriggerFor]="menu">
+          <mat-icon>more_vert</mat-icon>
+        </button>
+        <mat-menu #menu="matMenu">
+          <button mat-menu-item (click)="renameProject(project)">Rename</button>
+          <button mat-menu-item (click)="deleteProject(project.id)">Delete</button>
+        </mat-menu>
+      </div>
+
       <img src="assets/icons/folder.png" alt="Project Folder">
       <p>{{ project.name }}</p>
     </div>

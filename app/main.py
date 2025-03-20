@@ -1,4 +1,4 @@
-from fastapi import BackgroundTasks, FastAPI, File, UploadFile, HTTPException, Form, Depends
+from fastapi import BackgroundTasks, FastAPI, File, UploadFile, HTTPException, Form, Depends, Query
 from fastapi.responses import FileResponse, HTMLResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.middleware.cors import CORSMiddleware
@@ -27,23 +27,13 @@ from datetime import datetime
 load_dotenv()
 
 
-# Capstone (before Shanghai):
+# Capstone (infal round for complete demo):
 # -> UI changes/functions
-# Allow User to add or delete rows (/)
-# Make Test Data visible and editable (/)
-# Store modules per project folder (/)
 # Display document/module name e.g SCR_001
-# Add column to indicate test type (/)
-# Create ability to save test cases after they have been generated
 # Refine default template to include 1. dynamically naming after project + module + document
 # Add option to create versions of end to end test cases (modules combined to one, add all mandatory test specs + targeted tests)
-# DB
-# Project
-# -> Module -> Mandatory Suite + SCR changes -> Test Cases (done)
-# -> Mandatory End-to-End Suites
  
 # Data Needed:
-# Full flow GPN basic test flow + Cleaned SCR
 # -> check for whether SCR affects mandatory TC
 # -> if SCR, generate comparison with mandatory TC, let user edit and save to DB. Changes are categorised as targeted
  
@@ -61,14 +51,14 @@ BASE_DIR = Path(__file__).resolve().parent
 # Define file paths based on environment
 if CONFIG_MODE == "docker":
     STATIC_DIR = BASE_DIR / "templates"
-    TEMPLATE_PATH = BASE_DIR / "testdata" / "DPP2_Template.xlsx"
+    TEMPLATE_PATH = BASE_DIR / "testdata" / "Default_Template.xlsx"
     OUTPUT_PATH = BASE_DIR / "generateddata" / "updated_test_cases.xlsx"
     from app.db.database import SessionLocal, engine, Base
     from app.db.models import Project, Module, TestScripts, Suite
     print(TEMPLATE_PATH)
 else:
     STATIC_DIR = BASE_DIR / "templates"
-    TEMPLATE_PATH = BASE_DIR / "testdata" / "DPP2_Template.xlsx"
+    TEMPLATE_PATH = BASE_DIR / "testdata" / "Default_Template.xlsx"
     OUTPUT_PATH = BASE_DIR / "generateddata" / "updated_test_cases.xlsx"
     from db.database import SessionLocal, engine, Base
     from db.models import Project, TestScripts
@@ -153,6 +143,28 @@ def get_project(project_id: int, db: Session = Depends(get_db)):
     
     logging.info(f"Project found: {project.name}")
     return project
+
+@app.delete("/projects/{project_id}")
+def delete_project(project_id: int, db: Session = Depends(get_db)):
+    # Fetch the project
+    project = db.query(Project).filter(Project.id == project_id).first()
+    if not project:
+        raise HTTPException(status_code=404, detail="Project not found")
+
+    # Delete associated modules and their test scripts
+    for module in project.modules:
+        db.query(TestScripts).filter(TestScripts.module_id == module.id).delete()
+        db.delete(module)
+
+    # Delete associated suites
+    for suite in project.suites:
+        db.delete(suite)
+
+    # Finally, delete the project itself
+    db.delete(project)
+    db.commit()
+
+    return {"message": "Project and all associated data deleted successfully"}
 
 #modules
 
@@ -402,6 +414,38 @@ class ModuleUpdateRequest(BaseModel):
 
     class Config:
         orm_mode = True
+        
+        
+
+@app.get("/search", response_model=List[dict])
+def search_items(
+    query: str = Query(None, min_length=1),
+    db: Session = Depends(get_db)
+):
+    if not query:
+        return []
+    query = f"%{query}%"  # SQL LIKE pattern for flexible search
+    # Fetch modules
+    modules = db.query(Module).filter(Module.name.ilike(query)).all()
+    module_results = [
+        {
+            "name": module.name,
+            "type": "Module",
+            "link": f"/preview/{module.project.name}/{module.project_id}/{module.name}/{module.id}"
+        }
+        for module in modules
+    ]
+    # Fetch suites
+    suites = db.query(Suite).filter(Suite.name.ilike(query)).all()
+    suite_results = [
+        {
+            "name": suite.name,
+            "type": "Suite",
+            "link": f"/project-test-suite/{suite.project.name}/{suite.project_id}/{suite.name}/{suite.id}"
+        }
+        for suite in suites
+    ]
+    return module_results + suite_results
 
 # TCs
 
@@ -603,6 +647,18 @@ async def generate_test_cases(file: UploadFile = File(...)):
         if os.path.exists(file_path):
             os.remove(file_path)
             
+# @app.post("/generate-full-flow")
+# async def generate_full_flow(selectedModules: string[], testStrategy: string):
+#     try:
+#         temp_dir = tempfile.mkdtemp()
+#         file_path = os.path.join(temp_dir, file.filename)
+        
+#         test_cases = await generate_test_scripts(document_text)
+#         return {"test_cases": test_cases}
+#     finally:
+#         if os.path.exists(file_path):
+#             os.remove(file_path)
+            
 
 class TestCase(BaseModel):
     Test_Case_ID: str
@@ -688,13 +744,47 @@ async def generate_test_scripts(document_text: str) -> list:
         return test_cases  # Return the list of test case dictionaries
     except json.JSONDecodeError:
         raise ValueError("The API response is not valid JSON. Ensure the prompt enforces proper JSON formatting.")
+    
+
+# Query OpenAI to generate test scripts
+async def generate_test_suites_full_flow(test_cases_json: str, instructions: str) -> list:
+    response = openai.chat.completions.create(
+        model="gpt-4o-mini",  # Replace with your model
+        messages=[
+            {"role": "system", "content": "You are an assistant that generates software test scripts."},
+            {"role": "user", "content": (
+            f"Generate test scripts for the following document:\n\n{test_cases_json}. "
+            "Limit your response to only the test script contents in JSON format. "
+            "Return the test cases as a JSON array (list) with each test case containing the following attributes: "
+            "Test_Case_ID, Test_Case_Name, Test_Case_Type, Pre_Condition, Actor_s, Test_Data, Step_Description, and Expected_Result. "
+            "Test_Case_Type values are limited to: Mandatory, SCR Change, Boundary Test, Edge Case, Exception Test. For each test case, select the most appropriate Test_Case_Type value."
+            "Do not include any additional text, just the JSON array in text. Every attribute should be a string. If a test case read seems appropriate, you may append it to your output as-is."
+            )}
+        ]
+    )
+    output = response.choices[0].message.content
+    
+    # Remove the ```json and ``` delimiters if present
+    if output.startswith("```json"):
+        output = output[7:]  # Remove the initial ```json
+    if output.endswith("```"):
+        output = output[:-3]  # Remove the closing ```
+    
+    print(output)
+    
+    try:
+        # Parse the JSON response
+        test_cases = json.loads(output)
+        return test_cases  # Return the list of test case dictionaries
+    except json.JSONDecodeError:
+        raise ValueError("The API response is not valid JSON. Ensure the prompt enforces proper JSON formatting.")
 
 
 def template_excel(test_cases: List[TestCase], template_path: str, output_path: str) -> str:
     workbook = load_workbook(template_path)
     sheet = workbook.active
 
-    for row, test_case in enumerate(test_cases, start=42):
+    for row, test_case in enumerate(test_cases, start=28):
         sheet.cell(row=row, column=1).value = test_case.Test_Case_ID
         sheet.cell(row=row, column=2).value = test_case.Test_Case_Name
         sheet.cell(row=row, column=3).value = test_case.Pre_Condition

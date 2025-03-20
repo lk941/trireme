@@ -35,6 +35,7 @@
     font-size: 14px;
     margin-left: 25px;
     color: #3c4758;
+    cursor: pointer;
   }
   
   .navbar-right {
@@ -56,6 +57,35 @@
   border-radius: 5px;
   border: 1px solid #ccc;
 }
+
+.search-container {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.search-results {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  width: 100%;
+  background: white;
+  border: 1px solid #ddd;
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  z-index: 10;
+}
+
+.search-results li {
+  padding: 8px;
+  cursor: pointer;
+}
+
+.search-results li:hover {
+  background: #f4f4f4;
+}
+
 
 /* Search Icon Inside Input */
 .search-icon {

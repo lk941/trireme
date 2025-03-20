@@ -1,24 +1,74 @@
 <div>
     <h1>{{ breadcrumb.projectName }} {{ breadcrumb.module }} Mandatory Tests</h1>
   
-    <p> This page is meant to contain the basic steps to test this module. <br/> 
-      Upload existing mandatory tests for this module, or create new ones for the basic test steps.</p>
+    <p> This page is meant to combine all necessary modules for a full project test. <br/> 
+      You may select all modules you wish to test, and indicate what you would like to optimise the suite for.</p>
   
-    <h2>Mandatory Test Cases</h2>
+    <div class="preview">  
+    <h2>Test Suite</h2>
+
+    <!-- Module Selection -->
+    <div>
+      <label>Select Modules:</label>
+      <div class="module-checkbox-container">
+        <input
+          type="checkbox"
+          [checked]="allSelected"
+          (change)="toggleSelectAll()"
+        />
+        <label>{{ selectAllText }}</label>
+        <br/>
+        <div class="projects-container">
+        <div *ngFor="let module of modules" class="module-checkbox">
+          <div class="project-card">
+            <input
+            type="checkbox"
+            [id]="'module-' + module.id"
+            [value]="module.id"
+            [(ngModel)]="module.selected"
+            (change)="validateModuleSelection()"
+          />
+          <label [for]="'module-' + module.id">{{ module.name }}</label>
+          </div>
+        </div>
+        </div>
+      </div>
+      <small *ngIf="showModuleError" class="error-message">Please select at least one module.</small>
+    </div>
+
+    <!-- Optimization Options -->
+    <div>
+      <label>Optimize Test Suite For:</label>
+      <div class="projects-container">
+      <div class="project-card">
+      <label>
+        <input type="radio" [(ngModel)]="optimizationType" value="manual"> Manual Testing (Efficiency)
+      </label>
+        <ul>
+          <li> Mandatory Tests </li>
+          <li> Targeted Tests </li>
+          <li> Exception Tests </li>
+        </ul>
+      </div>
+      <div class="project-card">
+      <label>
+        <input type="radio" [(ngModel)]="optimizationType" value="automated"> Automated Testing (Robustness)
+      </label>
+      <ul>
+        <li> Mandatory Tests </li>
+        <li> Targeted Tests </li>
+        <li> Exception Tests </li>
+        <li> + Boundary Tests </li>
+        <li> + Edge Cases </li>
+      </ul>
+      </div>
+    </div>
+    </div>
   
     <!-- File Upload -->
-    <div>
-      <label for="file-upload">Upload a file:</label>
-      <input
-        id="file-upload"
-        type="file"
-        (change)="onFileChange($event)"
-        accept=".docx, .xlsx"
-      />
-      <button (click)="onSubmit($event)" [disabled]="!file || isProcessing">
-        Generate Test Cases
-      </button>
-    </div>
+    <button (click)="onSubmit($event)" [disabled]="!selectedModules || isProcessing">
+      Generate Test Cases
+    </button>
   
     <!-- Loading Spinner -->
     <div *ngIf="isProcessing">
@@ -100,5 +150,6 @@
     <button *ngIf="projectId" (click)="navigateToSetup(projectId)" [disabled]="!projectId">
       Setup Test Automation
     </button>
+  </div>
   </div>
   

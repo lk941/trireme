@@ -120,7 +120,7 @@ export class ProjectPageComponent implements OnInit{
   }
 
   navigateToSuite(projectId: number, suiteName: String, projectSpecificId: number): void {
-    this.router.navigate(['/preview', this.breadcrumb.projectName , projectId, suiteName, projectSpecificId]);
+    this.router.navigate(['/project-test-suite', this.breadcrumb.projectName , projectId, suiteName, projectSpecificId]);
   }
 
   navigateToSetup(projectId: number) {
