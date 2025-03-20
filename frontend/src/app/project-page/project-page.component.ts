@@ -60,6 +60,17 @@ export class ProjectPageComponent implements OnInit{
 
   saveDescription(): void {
     this.isEditing = false;
+    const updatedData = { description: this.description };
+
+    this.http.put(`http://localhost:8000/projects/${this.projectId}`, updatedData)
+      .subscribe(
+        response => {
+          console.log("Project saved successfully!", response);
+        },
+        error => {
+          console.error("Error updating project:", error);
+        }
+      );
   }
 
   loadModules(): void {
@@ -133,6 +144,7 @@ export class ProjectPageComponent implements OnInit{
   loadProjectDetails(): void {
     this.http.get<any>(`http://localhost:8000/projects/${this.projectId}`).subscribe(project => {
       this.projectName = project.name;
+      this.description = project.description.replace(/^"(.*)"$/, '$1');;
     });
   }
 

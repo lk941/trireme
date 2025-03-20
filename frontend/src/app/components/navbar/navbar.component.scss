@@ -37,6 +37,10 @@
     color: #3c4758;
     cursor: pointer;
   }
+
+  .breadcrumb p:hover {
+    text-decoration: underline;
+  }
   
   .navbar-right {
     display: flex;

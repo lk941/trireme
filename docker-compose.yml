@@ -10,8 +10,6 @@ services:
       - ./env/.env.docker  
     volumes:
       - ./frontend/dist:/frontend/dist
-    # networks:
-    #   - ollama_network
 
   frontend:
     container_name: trireme_frontend
@@ -19,9 +17,9 @@ services:
       context: ./frontend
       dockerfile: Dockerfile
     ports:
-      - "4200:80"  # Map Angular app to port 4200
+      - "4200:80"
     depends_on:
-      - app  # Ensure the backend is up before the frontend
+      - app 
 
   postgres:
     image: postgres:15
@@ -34,19 +32,10 @@ services:
       - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
-    # networks:
-    #   - ollama_network
-
-# networks:
-#   ollama_network:
-#     external: true
 
 volumes:
-  # ollama:
-  #   driver: local
   postgres_data:
     driver: local
-  # codestral: 
-  #   driver: local
+
 
   

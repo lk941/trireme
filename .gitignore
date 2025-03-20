@@ -10,3 +10,4 @@ mapping.json
 app/scripts
 frontend/dist
 frontend/.angular
+k8s

@@ -22,7 +22,7 @@
         <!-- Dropdown with Search Results -->
         <ul class="search-results" *ngIf="searchResults.length">
           <li *ngFor="let result of searchResults" (click)="navigateTo(result.link)">
-            <a>{{ result.name }} ({{ result.type }})</a>
+            <a>{{result.project}}/{{ result.name }} ({{ result.type }})</a>
           </li>
         </ul>
       </div>

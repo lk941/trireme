@@ -66,31 +66,4 @@
     cursor: pointer;
   }
   
-button {
-    margin-top: 20px;
-    margin-right:10px;
-    padding: 10px 20px;
-    background-color: #0e1f3b;
-    color: white;
-    border: none;
-    cursor: pointer;
-    font-weight: 400;
-}
 
-button:hover {
-    background-color: #283e61;
-}
-
-.menu-container button {
-  margin: 0;
-  padding: 0;
-  background-color: transparent;
-  color: rgb(181, 181, 181);
-  border: none;
-  cursor: pointer;
-  font-weight: 400;
-}
-
-button:hover {
-  background-color: #283e61;
-}

@@ -175,8 +175,6 @@ export class ProjectTestSuiteComponent implements OnInit{
       testStrategy : testStrategy
     };
 
-    alert(selectedModules);
-
     // Log selected modules for debugging
     console.log('Selected Modules:', selectedModules);
 

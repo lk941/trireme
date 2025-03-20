@@ -105,6 +105,14 @@ class ProjectResponse(BaseModel):
     class Config:
         orm_mode = True
         
+        
+class ProjectUpdateRequest(BaseModel):
+    description: str  # Assuming script_content is a list of test cases
+
+    class Config:
+        orm_mode = True
+        
+        
 @app.get("/projects", response_model=list[ProjectResponse])
 def read_projects(db: Session = Depends(get_db)):
     projects = db.query(Project).all()
@@ -143,6 +151,37 @@ def get_project(project_id: int, db: Session = Depends(get_db)):
     
     logging.info(f"Project found: {project.name}")
     return project
+
+@app.put("/projects/{project_id}", response_model=dict)
+def update_project_description(
+    project_id: int,
+    request: ProjectUpdateRequest,
+    db: Session = Depends(get_db),
+):
+    # Fetch the project
+    project = db.query(Project).filter(
+        Project.id == project_id,
+    ).first()
+
+    if not project:
+        logging.error(f"Project {project_id} not found.")
+        raise HTTPException(status_code=404, detail="Project not found.")
+
+    try:
+        # Convert script_content to JSON format
+        project.description = json.dumps(request.description)  # Convert Python object to JSON string
+
+        # Commit changes
+        db.commit()
+        db.refresh(project)
+
+        return {"message": "Project updated successfully!"}
+    
+    except Exception as e:
+        db.rollback()
+        logging.error(f"Database error: {e}")
+        raise HTTPException(status_code=500, detail="Database error while updating project")
+    
 
 @app.delete("/projects/{project_id}")
 def delete_project(project_id: int, db: Session = Depends(get_db)):
@@ -474,8 +513,9 @@ def search_items(
     module_results = [
         {
             "name": module.name,
+            "project": module.project.name,
             "type": "Module",
-            "link": f"/preview/{module.project.name}/{module.project_id}/{module.name}/{module.id}"
+            "link": f"/preview/{module.project.name}/{module.project_id}/{module.name}/{module.project_specific_id}"
         }
         for module in modules
     ]
@@ -484,8 +524,9 @@ def search_items(
     suite_results = [
         {
             "name": suite.name,
+            "project": suite.project.name,
             "type": "Suite",
-            "link": f"/project-test-suite/{suite.project.name}/{suite.project_id}/{suite.name}/{suite.id}"
+            "link": f"/project-test-suite/{suite.project.name}/{suite.project_id}/{suite.name}/{suite.project_specific_id}"
         }
         for suite in suites
     ]
