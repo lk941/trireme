@@ -375,6 +375,23 @@ def get_suites_by_project_id(project_id: int, db: Session = Depends(get_db)):
     
     return suite
 
+@app.get("/suites/{project_id}/{project_specific_id}", response_model=SuiteResponse)
+def get_suite_by_project_specific_id(
+    project_id: int, 
+    project_specific_id: int, 
+    db: Session = Depends(get_db)
+    ):
+    suite = db.query(Suite).filter(
+        Suite.project_id == project_id,
+        Suite.project_specific_id == project_specific_id
+    ).first()
+
+    if not suite:
+        logging.error(f"Suite {project_specific_id} not found in project {project_id}.")
+        raise HTTPException(status_code=404, detail="Suite not found in the specified project")
+    
+    return suite
+
 ### POST: Create a new module (auto-generates `project_specific_id`) ###
 @app.post("/suites", response_model=SuiteResponse)
 def create_suite(module: ModuleCreate, db: Session = Depends(get_db)):
@@ -408,12 +425,39 @@ def create_suite(module: ModuleCreate, db: Session = Depends(get_db)):
         logging.error(f"Error creating module: {e}")
         raise HTTPException(status_code=500, detail="Error creating module")
     
+        
     
-class ModuleUpdateRequest(BaseModel):
-    script_content: List[dict]  # Assuming script_content is a list of test cases
+@app.put("/suites/{project_id}/{project_specific_id}", response_model=dict)
+def update_suite_script_content(
+    project_id: int,
+    project_specific_id: int,
+    request: ModuleUpdateRequest,
+    db: Session = Depends(get_db),
+):
+    # Fetch the suite
+    suite = db.query(Suite).filter(
+        Suite.project_id == project_id,
+        Suite.project_specific_id == project_specific_id
+    ).first()
 
-    class Config:
-        orm_mode = True
+    if not suite:
+        logging.error(f"Suite {project_specific_id} not found in project {project_id}.")
+        raise HTTPException(status_code=404, detail="Suite not found in the specified project")
+
+    try:
+        # Convert script_content to JSON format
+        suite.script_content = json.dumps(request.script_content)  # Convert Python object to JSON string
+
+        # Commit changes
+        db.commit()
+        db.refresh(suite)
+
+        return {"message": "Suite script_content updated successfully!"}
+    
+    except Exception as e:
+        db.rollback()
+        logging.error(f"Database error: {e}")
+        raise HTTPException(status_code=500, detail="Database error while updating suite")
         
         
 
@@ -647,17 +691,6 @@ async def generate_test_cases(file: UploadFile = File(...)):
         if os.path.exists(file_path):
             os.remove(file_path)
             
-# @app.post("/generate-full-flow")
-# async def generate_full_flow(selectedModules: string[], testStrategy: string):
-#     try:
-#         temp_dir = tempfile.mkdtemp()
-#         file_path = os.path.join(temp_dir, file.filename)
-        
-#         test_cases = await generate_test_scripts(document_text)
-#         return {"test_cases": test_cases}
-#     finally:
-#         if os.path.exists(file_path):
-#             os.remove(file_path)
             
 
 class TestCase(BaseModel):
@@ -669,6 +702,22 @@ class TestCase(BaseModel):
     Test_Data: str
     Step_Description: str
     Expected_Result: str
+    
+class GenerateTestSuitesRequest(BaseModel):
+    selectedModules: List[List[TestCase]]
+    testStrategy: str
+
+@app.post("/generate-test-suites")
+async def generate_test_suites(request: GenerateTestSuitesRequest):
+    all_test_cases = []
+    try:
+        for module in request.selectedModules:
+            generated_test_cases = await generate_test_suites_full_flow(module, request.testStrategy)
+            all_test_cases.extend(generated_test_cases)
+        return {"test_cases": all_test_cases}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+    
 
 class GenerateExcelRequest(BaseModel):
     test_cases: List[TestCase]
@@ -748,12 +797,18 @@ async def generate_test_scripts(document_text: str) -> list:
 
 # Query OpenAI to generate test scripts
 async def generate_test_suites_full_flow(test_cases_json: str, instructions: str) -> list:
+    
+    if instructions == "manual":
+        s = "retain all mandatory test cases and targeted test cases, and generate exception cases where appropriate. Optimise the test cases for manual testing."
+    else:
+        s = "retain all mandatory test cases and targeted test cases, and generate exception cases, boundary tests, and edge cases where appropriate. Optimise the test cases for robust, automated testing."
+        
     response = openai.chat.completions.create(
         model="gpt-4o-mini",  # Replace with your model
         messages=[
             {"role": "system", "content": "You are an assistant that generates software test scripts."},
             {"role": "user", "content": (
-            f"Generate test scripts for the following document:\n\n{test_cases_json}. "
+            f"Given the following test cases, {s}: \n\n {test_cases_json}. "
             "Limit your response to only the test script contents in JSON format. "
             "Return the test cases as a JSON array (list) with each test case containing the following attributes: "
             "Test_Case_ID, Test_Case_Name, Test_Case_Type, Pre_Condition, Actor_s, Test_Data, Step_Description, and Expected_Result. "

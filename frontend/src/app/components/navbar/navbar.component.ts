@@ -43,7 +43,7 @@ export class NavbarComponent implements OnInit {
   updateBreadcrumb() {
     const snapshot = this.route.root.firstChild?.snapshot;
     this.breadcrumb.projectName = snapshot?.paramMap.get('projectName') || '';
-    this.breadcrumb.module = snapshot?.paramMap.get('moduleName') || '';
+    this.breadcrumb.module = snapshot?.paramMap.get('moduleName') || snapshot?.paramMap.get('testSuiteName') || '';
 
     this.projectId = snapshot?.paramMap.get('pid') || null;
 

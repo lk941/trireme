@@ -53,10 +53,10 @@ export class ProjectTestSuiteComponent implements OnInit{
 
   ngOnInit() {
     this.projectId = Number(this.route.snapshot.paramMap.get('pid'));
-    this.moduleId = Number(this.route.snapshot.paramMap.get('mid'));
+    this.moduleId = Number(this.route.snapshot.paramMap.get('tsid'));
     this.loadModules();
 
-    this.loadModuleTestCases()
+    this.loadSuiteTestCases()
 
     // Select all modules by default
     this.selectedModules = this.modules.map(module => module.id);
@@ -113,9 +113,9 @@ export class ProjectTestSuiteComponent implements OnInit{
     });
   }
 
-  loadModuleTestCases(): void {
+  loadSuiteTestCases(): void {
     console.log(this.projectId)
-    this.http.get<any>(`http://localhost:8000/modules/${this.projectId}/${this.moduleId}`).subscribe(data => {
+    this.http.get<any>(`http://localhost:8000/suites/${this.projectId}/${this.moduleId}`).subscribe(data => {
       console.log(data.script_content)
       this.testCases = JSON.parse(data.script_content) ?? []; 
       this.editedTestCases = [...this.testCases];
@@ -153,37 +153,54 @@ export class ProjectTestSuiteComponent implements OnInit{
   // Submits the file to generate test cases
   onSubmit(event: Event): void {
     event.preventDefault();
-  
+
     // Retrieve selected modules and test strategy
     const { selectedModules, testStrategy } = this.getTestSuiteDetails();
-  
+
+    // Validate selected modules
     if (selectedModules.length === 0) {
       this.showModuleError = true;
       return;
     }
-  
+
+    // Reset error state and set processing flag
     this.showModuleError = false;
     this.isProcessing = true;
-  
-    const formData = new FormData();
-    formData.append('selectedModules', JSON.stringify(selectedModules));
-    formData.append('testStrategy', testStrategy);
+
+    const parsedSelectedModules = selectedModules.map(module => JSON.parse(module));
+
+    // Prepare the payload
+    const payload = {
+      selectedModules : parsedSelectedModules,
+      testStrategy : testStrategy
+    };
 
     alert(selectedModules);
-  
-    // this.http.post('http://127.0.0.1:8000/generate-test-cases', formData)
-    //   .subscribe(
-    //     (response: any) => {
-    //       this.isProcessing = false;
-    //       this.testCases = response.test_cases;
-    //       this.editedTestCases = [...this.testCases]; // Copy for editing
-    //       this.isDataLoaded = true;  // Set flag to show table after generation
-    //     },
-    //     (error) => {
-    //       this.isProcessing = false;
-    //       console.error('Error generating test cases:', error);
-    //     }
-    //   );
+
+    // Log selected modules for debugging
+    console.log('Selected Modules:', selectedModules);
+
+    // Send the request to the backend
+    this.http.post('http://127.0.0.1:8000/generate-test-suites', payload, {
+      headers: { 'Content-Type': 'application/json' }
+    }).subscribe({
+      next: (response: any) => this.handleSuccess(response),
+      error: (error) => this.handleError(error)
+    });
+  }
+
+  // Handles successful response from the backend
+  private handleSuccess(response: any): void {
+    this.isProcessing = false;
+    this.testCases = response.test_cases;
+    this.editedTestCases = [...this.testCases]; // Copy for editing
+    this.isDataLoaded = true; // Set flag to show table after generation
+  }
+
+  // Handles errors from the backend
+  private handleError(error: any): void {
+    this.isProcessing = false;
+    console.error('Error generating test cases:', error);
   }
   
 
@@ -193,31 +210,23 @@ export class ProjectTestSuiteComponent implements OnInit{
       .filter(module => module.selected)
       .map(module => module.scr_update || module.script_content); // or module.name if you prefer names
   
-    // Determine test strategy based on radio button selection
-    let testStrategy = '';
-    if (this.optimizationType === 'automated') {
-      testStrategy =
-        "Generate mandatory, exception, targeted, boundary and edge cases with the goal of strategically maximizing test scope for automation.";
-    } else if (this.optimizationType === 'manual') {
-      testStrategy =
-        "Generate mandatory, exception, and targeted test cases only with the goal of optimizing manual testing time.";
-    }
+    let testStrategy = this.optimizationType;
   
     return { selectedModules, testStrategy };
   }
 
-  updateModuleTestCases(): void {
+  updateTestSuite(): void {
     const updatedData = { script_content: this.editedTestCases };
 
-    this.http.put(`http://localhost:8000/modules/${this.projectId}/${this.moduleId}`, updatedData)
+    this.http.put(`http://localhost:8000/suites/${this.projectId}/${this.moduleId}`, updatedData)
       .subscribe(
         response => {
-          console.log("Module test cases updated successfully!", response);
-          alert("Module test cases updated successfully!");
+          console.log("Suite saved successfully!", response);
+          alert("Suite saved successfully!");
         },
         error => {
-          console.error("Error updating module test cases:", error);
-          alert("Failed to update module test cases.");
+          console.error("Error updating suite:", error);
+          alert("Failed to update suite.");
         }
       );
   }
