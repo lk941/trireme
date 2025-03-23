@@ -113,3 +113,14 @@
     </button>
   </div>
 </div>
+
+<ng-template #confirmDialog style="align-items: center">
+  <h1 mat-dialog-title>Update Module Mandatory Tests</h1>
+  <div mat-dialog-content>
+    <p>Would you like to update the module mandatory tests as well?</p>
+  </div>
+  <div mat-dialog-actions>
+    <button mat-button (click)="onDialogNoClick()">No</button>
+    <button mat-button (click)="onDialogYesClick()" cdkFocusInitial>Yes</button>
+  </div>
+</ng-template>

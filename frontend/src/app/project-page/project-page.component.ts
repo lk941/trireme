@@ -116,11 +116,11 @@ export class ProjectPageComponent implements OnInit{
 
   createSuite(): void {
     if (this.newSuiteName.trim()) {
-      this.http.post<{ id: number }>('http://localhost:8000/suites', { project_id: this.projectId, name: this.newSuiteName, description: '' })
+      this.http.post<{ id: number; project_specific_id: number }>('http://localhost:8000/suites', { project_id: this.projectId, name: this.newSuiteName, description: '' })
         .subscribe((response) => {
-          const suiteId = response.id;
+          const projectSpecificId = response.project_specific_id;
           this.closeMandModal();
-          this.router.navigate(['/project-test-suite', this.projectName, this.projectId, this.newSuiteName, suiteId]);
+          this.router.navigate(['/project-test-suite', this.projectName, this.projectId, this.newSuiteName, projectSpecificId]);
           this.newSuiteName = '';
         });
     }

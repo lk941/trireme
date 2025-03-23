@@ -7,8 +7,8 @@
   
     <!-- Breadcrumb Navigation -->
     <div class="breadcrumb">
-      <span *ngIf="breadcrumb.projectName" (click)="navigateToProject()">{{ breadcrumb.projectName }} / </span>
-      <span *ngIf="breadcrumb.module">{{ breadcrumb.module }}</span>
+      <span *ngIf="breadcrumb.projectName" (click)="navigateToProject()">{{ breadcrumb.projectName }}</span>
+      <span *ngIf="breadcrumb.module">  /  {{ breadcrumb.module }}</span>
     </div>
   
     <!-- Search Bar -->

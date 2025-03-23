@@ -10,6 +10,8 @@ services:
       - ./env/.env.docker  
     volumes:
       - ./frontend/dist:/frontend/dist
+    networks:
+      - trireme_network
 
   frontend:
     container_name: trireme_frontend
@@ -20,6 +22,8 @@ services:
       - "4200:80"
     depends_on:
       - app 
+    networks:
+      - trireme_network
 
   postgres:
     image: postgres:15
@@ -32,10 +36,31 @@ services:
       - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
+    networks:
+      - trireme_network
+
+  locust:
+    image: locustio/locust
+    container_name: locust
+    volumes:
+      - ./locust:/mnt/locust:rw
+      - ./locust/test_files:/mnt/test_files
+    working_dir: /mnt/locust
+    networks:
+      - trireme_network
+    ports:
+      - "8089:8089"
+    depends_on:
+      - app
+    command: -f /mnt/locust/locustfile.py --host http://app:8000
 
 volumes:
   postgres_data:
     driver: local
+
+networks:
+  trireme_network:
+    driver: bridge
 
 
   

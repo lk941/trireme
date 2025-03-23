@@ -55,13 +55,6 @@ export class HomeComponent implements OnInit {
     this.router.navigate(['/project-page', projectName, projectId]);
   }
 
-  renameProject(project: any) {
-    const newName = prompt('Enter new project name:', project.name);
-    if (newName) {
-      project.name = newName;
-    }
-  }
-
   deleteProject(projectId: number): void {
     this.http.delete(`http://localhost:8000/projects/${projectId}`).subscribe({
       next: (response: any) => {

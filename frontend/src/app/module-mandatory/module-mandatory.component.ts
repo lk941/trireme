@@ -18,6 +18,7 @@ import { MatSnackBar } from '@angular/material/snack-bar';
 export class ModuleMandatoryComponent implements OnInit{
   testCases: any[] = []; // Stores the generated test cases
   file: File | null = null; // Stores the uploaded file
+  sheet_name: string | null = null; // Stores sheet name
   isProcessing: boolean = false; // Tracks loading state
   isDataLoaded: boolean = false; // Tracks if data is loaded for table display
   projectId: number | null = null;
@@ -86,6 +87,13 @@ export class ModuleMandatoryComponent implements OnInit{
     const target = event.target as HTMLInputElement;
     this.file = target.files?.[0] || null;
   }
+
+  // Handles file selection
+  onSheetChange(event: Event): void {
+    const target = event.target as HTMLInputElement;
+    this.sheet_name = target.value || null;
+  }
+  
   
 
   addRow(): void {
@@ -116,6 +124,9 @@ export class ModuleMandatoryComponent implements OnInit{
 
     const formData = new FormData();
     formData.append('file', this.file);
+    if (this.sheet_name) {
+      formData.append('sheet_name', this.sheet_name);
+    }
 
     this.http.post('http://127.0.0.1:8000/generate-test-cases', formData)
       .subscribe(

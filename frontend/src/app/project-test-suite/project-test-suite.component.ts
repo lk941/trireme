@@ -5,11 +5,13 @@ import { FormsModule } from '@angular/forms';
 import { CommonModule } from '@angular/common';
 import { ActivatedRoute, Router } from '@angular/router';
 import { NavbarService } from '../services/navbar.service';
+import { MatSnackBar } from '@angular/material/snack-bar';
+import { MatDialog, MatDialogModule, MatDialogRef } from '@angular/material/dialog';
 
 @Component({
   selector: 'app-project-test-suite',
   standalone: true,
-  imports: [FormsModule, HttpClientModule, CommonModule],
+  imports: [FormsModule, HttpClientModule, CommonModule, MatDialogModule],
   templateUrl: './project-test-suite.component.html',
   styleUrl: './project-test-suite.component.scss'
 })
@@ -43,7 +45,7 @@ export class ProjectTestSuiteComponent implements OnInit{
     }
   ];
 
-  constructor(private navbarService: NavbarService, private route: ActivatedRoute, private http: HttpClient, private router: Router) {}
+  constructor(private navbarService: NavbarService, private route: ActivatedRoute, private http: HttpClient, private router: Router, private snackBar: MatSnackBar, public dialog: MatDialog) {}
 
   navigateToSetup(projectId: number) {
     this.router.navigate(['/automation-setup', projectId], {
@@ -206,7 +208,8 @@ export class ProjectTestSuiteComponent implements OnInit{
     // Retrieve selected modules
     const selectedModules = this.modules
       .filter(module => module.selected)
-      .map(module => module.scr_update || module.script_content); // or module.name if you prefer names
+      // next time to include targeted tests, add logic around here
+      .map(module => module.script_content); 
   
     let testStrategy = this.optimizationType;
   
@@ -220,11 +223,11 @@ export class ProjectTestSuiteComponent implements OnInit{
       .subscribe(
         response => {
           console.log("Suite saved successfully!", response);
-          alert("Suite saved successfully!");
+          this.showSnackbar("Suite updated successfully!", "success");
         },
         error => {
           console.error("Error updating suite:", error);
-          alert("Failed to update suite.");
+          this.showSnackbar("Error in updating Suite", "error");
         }
       );
   }
@@ -256,5 +259,15 @@ export class ProjectTestSuiteComponent implements OnInit{
         }
       );
   }
+
+  showSnackbar(message: string, type: string): void {
+    this.snackBar.open(message, 'Close', {
+      duration: 3000,
+      horizontalPosition: 'right',
+      verticalPosition: 'top',
+      panelClass: type === "success" ? 'snackbar-success' : 'snackbar-error'
+    });
+  }
+
 }
 

@@ -1,20 +1,27 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, TemplateRef, ViewChild } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { HttpClientModule } from '@angular/common/http';
 import { FormsModule } from '@angular/forms';
 import { CommonModule } from '@angular/common';
 import { ActivatedRoute, Router } from '@angular/router';
 import { NavbarService } from '../services/navbar.service';
+import { MatSnackBar } from '@angular/material/snack-bar';
+import { MatDialog, MatDialogModule, MatDialogRef } from '@angular/material/dialog';
+
 
 @Component({
   selector: 'app-preview',
   standalone: true,
-  imports: [FormsModule, HttpClientModule, CommonModule],
+  imports: [FormsModule, HttpClientModule, CommonModule, MatDialogModule],
   templateUrl: './preview.component.html',
   styleUrl: './preview.component.scss'
 })
 export class PreviewComponent implements OnInit{
+  @ViewChild('confirmDialog') confirmDialog!: TemplateRef<any>;
+  private dialogRef!: MatDialogRef<any>;
+
   testCases: any[] = []; // Stores the generated test cases
+  mandatoryTestCases: any[] = [];
   editedTestCases: any[] = [
     {
       Test_Case_ID: '',
@@ -35,7 +42,7 @@ export class PreviewComponent implements OnInit{
   breadcrumb = { projectName: '', module: '' };
   moduleTC: String | null = null; // Returns either name of file or no existing module test cases
 
-  constructor(private navbarService: NavbarService, private route: ActivatedRoute, private http: HttpClient, private router: Router) {}
+  constructor(private navbarService: NavbarService, private route: ActivatedRoute, private http: HttpClient, private router: Router, private snackBar: MatSnackBar, public dialog: MatDialog) {}
 
   ngOnInit() {
     this.projectId = Number(this.route.snapshot.paramMap.get('pid'));
@@ -66,6 +73,7 @@ export class PreviewComponent implements OnInit{
     this.http.get<any>(`http://localhost:8000/modules/${this.projectId}/${this.moduleId}`).subscribe(data => {
       console.log(data.scr_update)
       this.testCases = JSON.parse(data.scr_update) ?? []; 
+      this.mandatoryTestCases = JSON.parse(data.script_content) ?? []; 
       this.editedTestCases = [...this.testCases];
       console.log(this.editedTestCases);
     });
@@ -131,22 +139,61 @@ export class PreviewComponent implements OnInit{
         }
       );
   }
+  
 
   updateTestCases(): void {
     const updatedData = { script_content: this.editedTestCases };
-
+  
+    // Open the dialog and assign the dialogRef to this.dialogRef
+    this.dialogRef = this.dialog.open(this.confirmDialog, {
+      width: '250px',
+    });
+  
+    // Handle dialog closure
+    this.dialogRef.afterClosed().subscribe(async (result) => {
+      if (result) {
+        try {
+          // Step 1: Generate updated mandatory test cases
+          const payload = {
+            json_input_1: this.editedTestCases, // SCR test cases
+            json_input_2: this.mandatoryTestCases // Existing mandatory test cases
+          };
+  
+          // Send POST request to generate updated mandatory test cases
+          const generateResponse: any = await this.http.post('http://127.0.0.1:8000/generate-mandatory-update', payload).toPromise();
+  
+          // Update the test cases with the response
+          const updatedMandatoryTestCases = generateResponse.test_cases;
+  
+          // Step 2: Update mandatory test cases (MTC)
+          const mtcPayload = { script_content: updatedMandatoryTestCases };
+          const mtcResponse = await this.http.put(`http://localhost:8000/modules/${this.projectId}/${this.moduleId}/update_mtc`, mtcPayload).toPromise();
+          console.log("Mandatory test cases updated successfully!", mtcResponse);
+          this.showSnackbar("Mandatory Test cases updated successfully!", "success");
+  
+          // Reload mandatory test cases after update
+          this.loadExistingTestCases();
+        } catch (error) {
+          console.error("Error during update process:", error);
+          this.showSnackbar("Error during update process", "error");
+        }
+      }
+    });
+  
+    // Step 3: Update SCR test cases (TTC) - Always execute this
     this.http.put(`http://localhost:8000/modules/${this.projectId}/${this.moduleId}/update_ttc`, updatedData)
       .subscribe(
-        response => {
-          console.log("Test cases updated successfully!", response);
-          alert("Test cases updated successfully!");
+        (response) => {
+          console.log("SCR Test cases updated successfully!", response);
+          this.showSnackbar("SCR Test cases updated successfully!", "success");
         },
-        error => {
-          console.error("Error updating module test cases:", error);
-          alert("Failed to update module test cases.");
+        (error) => {
+          console.error("Error updating SCR test cases:", error);
+          this.showSnackbar("Error updating SCR test cases", "error");
         }
       );
   }
+
 
   onDownload(): void {
     this.isProcessing = true;
@@ -174,4 +221,22 @@ export class PreviewComponent implements OnInit{
         }
       );
   }
+
+  showSnackbar(message: string, type: string): void {
+    this.snackBar.open(message, 'Close', {
+      duration: 3000,
+      horizontalPosition: 'right',
+      verticalPosition: 'top',
+      panelClass: type === "success" ? 'snackbar-success' : 'snackbar-error'
+    });
+  }
+
+  onDialogNoClick(): void {
+    this.dialogRef.close(false); // Close the dialog and return false
+  }
+
+  onDialogYesClick(): void {
+    this.dialogRef.close(true); // Close the dialog and return true
+  }
+
 }

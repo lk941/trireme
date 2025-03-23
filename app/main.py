@@ -1,4 +1,4 @@
-from fastapi import BackgroundTasks, FastAPI, File, UploadFile, HTTPException, Form, Depends, Query
+from fastapi import BackgroundTasks, FastAPI, File, Request, UploadFile, HTTPException, Form, Depends, Query
 from fastapi.responses import FileResponse, HTMLResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.middleware.cors import CORSMiddleware
@@ -25,18 +25,6 @@ from datetime import datetime
 
 # Load environment variables
 load_dotenv()
-
-
-# Capstone (infal round for complete demo):
-# -> UI changes/functions
-# Display document/module name e.g SCR_001
-# Refine default template to include 1. dynamically naming after project + module + document
-# Add option to create versions of end to end test cases (modules combined to one, add all mandatory test specs + targeted tests)
- 
-# Data Needed:
-# -> check for whether SCR affects mandatory TC
-# -> if SCR, generate comparison with mandatory TC, let user edit and save to DB. Changes are categorised as targeted
- 
 
 
 # Initialize OpenAI API client
@@ -107,8 +95,8 @@ class ProjectResponse(BaseModel):
         
         
 class ProjectUpdateRequest(BaseModel):
-    description: str  # Assuming script_content is a list of test cases
-
+    description: str 
+    
     class Config:
         orm_mode = True
         
@@ -119,7 +107,6 @@ def read_projects(db: Session = Depends(get_db)):
     return projects
 
 
-### Fixed: POST `/projects` ###
 @app.post("/projects", response_model=ProjectResponse)
 def create_project(project: ProjectCreate, db: Session = Depends(get_db)):
     try:
@@ -241,22 +228,21 @@ def get_module_by_project_id(project_id: int, db: Session = Depends(get_db)):
     ).all()
 
     if not module:
-        logging.error(f"project {project_id} not found.")
-        raise HTTPException(status_code=404, detail="Unknown module in the specified project")
+        logging.info(f"No modules found for project {project_id}.")
     
     return module
 
 
-### GET a module by its global `id` ###
-@app.get("/modules/{module_id}", response_model=ModuleResponse)
-def get_module(module_id: int, db: Session = Depends(get_db)):
-    module = db.query(Module).filter(Module.id == module_id).first()
+# ### GET a module by its global `id` ###
+# @app.get("/modules/{module_id}", response_model=ModuleResponse)
+# def get_module(module_id: int, db: Session = Depends(get_db)):
+#     module = db.query(Module).filter(Module.id == module_id).first()
     
-    if not module:
-        logging.error(f"Module with ID {module_id} not found.")
-        raise HTTPException(status_code=404, detail="Module not found")
+#     if not module:
+#         logging.error(f"Module with ID {module_id} not found.")
+#         raise HTTPException(status_code=404, detail="Module not found")
     
-    return module
+#     return module
 
 
 @app.get("/modules/{project_id}/{project_specific_id}", response_model=ModuleResponse)
@@ -409,10 +395,11 @@ def get_suites_by_project_id(project_id: int, db: Session = Depends(get_db)):
     ).all()
 
     if not suite:
-        logging.error(f"project {project_id} not found.")
-        raise HTTPException(status_code=404, detail="Unknown suite in the specified project")
+        logging.info(f"No suites found for project {project_id}.")
     
     return suite
+
+
 
 @app.get("/suites/{project_id}/{project_specific_id}", response_model=SuiteResponse)
 def get_suite_by_project_specific_id(
@@ -427,11 +414,10 @@ def get_suite_by_project_specific_id(
 
     if not suite:
         logging.error(f"Suite {project_specific_id} not found in project {project_id}.")
-        raise HTTPException(status_code=404, detail="Suite not found in the specified project")
     
     return suite
 
-### POST: Create a new module (auto-generates `project_specific_id`) ###
+
 @app.post("/suites", response_model=SuiteResponse)
 def create_suite(module: ModuleCreate, db: Session = Depends(get_db)):
     try:
@@ -481,7 +467,6 @@ def update_suite_script_content(
 
     if not suite:
         logging.error(f"Suite {project_specific_id} not found in project {project_id}.")
-        raise HTTPException(status_code=404, detail="Suite not found in the specified project")
 
     try:
         # Convert script_content to JSON format
@@ -532,120 +517,6 @@ def search_items(
     ]
     return module_results + suite_results
 
-# TCs
-
-class TestScriptCreate(BaseModel):
-    id: int
-    module_id: int
-    module_specific_id: int
-    name: str
-    description: str
-    created_at: datetime
-    updated_at: datetime
-    script_content: str
-
-    class Config:
-        orm_mode = True
-        
-        
-class TestScriptResponse(BaseModel):
-    id: int
-    module_id: int
-    module_specific_id: int
-    name: str
-    description: str
-    created_at: datetime
-    updated_at: datetime
-    script_content: str
-
-    class Config:
-        orm_mode = True
-    
-    
-### POST: Create a new ts (auto-generates `project_specific_id`) ###
-@app.post("/test-scripts", response_model=TestScriptResponse)
-def create_test_scripts(module: TestScriptCreate, db: Session = Depends(get_db)):
-    try:
-        # Get the latest `project_specific_id` for the given project
-        latest_module = (
-            db.query(TestScripts)
-            .filter(TestScripts.module_id == module.id)
-            .order_by(TestScripts.module_specific_id.desc())
-            .first()
-        )
-        new_module_specific_id = (latest_module.module_specific_id + 1) if latest_module else 1
-
-        new_module = TestScripts(
-            module_id=module.id,
-            module_specific_id=new_module_specific_id,
-            name=module.name,
-            description=module.description,
-            created_at=datetime.utcnow(),
-            updated_at=datetime.utcnow(),
-            script_content=""
-        )
-
-        db.add(new_module)
-        db.commit()
-        db.refresh(new_module)
-        return new_module
-
-    except Exception as e:
-        db.rollback()
-        logging.error(f"Error creating test script: {e}")
-        raise HTTPException(status_code=500, detail="Error creating test script")
-    
-    
-@app.get("/test-scripts/{module_id}/{module_specific_id}", response_model=TestScriptResponse)
-def get_test_script_by_project_specific_id(
-    project_id: int, 
-    project_specific_id: int, 
-    db: Session = Depends(get_db)
-):
-    module = db.query(TestScripts).filter(
-        TestScripts.project_id == project_id,
-        TestScripts.project_specific_id == project_specific_id
-    ).first()
-
-    if not module:
-        logging.error(f"Test Script {project_specific_id} not found in project {project_id}.")
-        raise HTTPException(status_code=404, detail="Test Script not found in the specified project")
-    
-    return module
-    
-    
-@app.put("/test-scripts/{project_id}/{project_specific_id}", response_model=dict)
-def update_module_script_content(
-    project_id: int,
-    project_specific_id: int,
-    request: ModuleUpdateRequest,
-    db: Session = Depends(get_db),
-):
-    # Fetch the module
-    module = db.query(TestScripts).filter(
-        Module.project_id == project_id,
-        Module.project_specific_id == project_specific_id
-    ).first()
-
-    if not module:
-        logging.error(f"Test Script {project_specific_id} not found in project {project_id}.")
-        raise HTTPException(status_code=404, detail="Module not found in the specified project")
-
-    try:
-        # Convert script_content to JSON format
-        module.script_content = json.dumps(request.script_content)  # Convert Python object to JSON string
-
-        # Commit changes
-        db.commit()
-        db.refresh(module)
-
-        return {"message": "Module script_content updated successfully!"}
-    
-    except Exception as e:
-        db.rollback()
-        logging.error(f"Database error: {e}")
-        raise HTTPException(status_code=500, detail="Database error while updating module")
-
 
 # rest of app routes
 
@@ -678,43 +549,9 @@ def load_request_data(file_path):
 def run_fastapi():
     uvicorn.run(app, host="127.0.0.1", port=8000)
 
-@app.post("/upload/")
-async def upload_file(file: UploadFile = File(...)):
-    print("upload backend triggered")
-    try:
-        # Save uploaded file to temporary directory
-        temp_dir = tempfile.mkdtemp()
-        file_path = os.path.join(temp_dir, file.filename)
-        test_scripts = ""
-        with open(file_path, "wb") as f:
-            f.write(await file.read())
-            
-        if (file.filename.split('.').pop().lower() == "docx"):
-            # Extract text from the Word document
-            document_text = extract_text_from_docx(file_path)
-
-            # Generate test scripts using OpenAI
-            test_scripts = await generate_test_scripts(document_text)
-        else:
-            # Extract text from the Excel file
-            document_text = extract_excel_content(file_path)
-
-            # Generate test scripts using OpenAI
-            test_scripts = await generate_test_scripts(document_text)
-
-        # Generate Excel file with test scripts
-        excel_file_path = template_excel(test_scripts, TEMPLATE_PATH, OUTPUT_PATH)
-
-        # Send the Excel file as a response
-        return FileResponse(excel_file_path, filename="test-scripts.xlsx")
-    finally:
-        # Clean up temporary files
-        if os.path.exists(file_path):
-            os.remove(file_path)
-            
 
 @app.post("/generate-test-cases")
-async def generate_test_cases(file: UploadFile = File(...)):
+async def generate_test_cases(file: UploadFile = File(...), sheet_name: str = Form(None)):
     try:
         temp_dir = tempfile.mkdtemp()
         file_path = os.path.join(temp_dir, file.filename)
@@ -724,13 +561,23 @@ async def generate_test_cases(file: UploadFile = File(...)):
         if file.filename.split('.').pop().lower() == "docx":
             document_text = extract_text_from_docx(file_path)
         else:
-            document_text = extract_excel_content(file_path)
+            document_text = extract_excel_content(file_path, sheet_name)
         
         test_cases = await generate_test_scripts(document_text)
         return {"test_cases": test_cases}
     finally:
         if os.path.exists(file_path):
             os.remove(file_path)
+            
+            
+@app.post("/generate-mandatory-update")
+async def generate_mandatory_update(request: Request):
+    body = await request.json()
+    json_input_1 = body.get("json_input_1")
+    json_input_2 = body.get("json_input_2")
+
+    test_cases = await generate_updated_mandatory(json_input_1, json_input_2)
+    return {"test_cases": test_cases}
             
             
 
@@ -780,15 +627,18 @@ def extract_text_from_docx(file_path: str) -> str:
     doc = Document(file_path)
     return "\n".join([para.text for para in doc.paragraphs if para.text.strip()])
 
-def extract_excel_content(file_path):
+def extract_excel_content(file_path, s_name):
     try:
         # Load the workbook
         workbook = openpyxl.load_workbook(file_path, data_only=True)
 
         output = []
-
+        if s_name and s_name in workbook.sheetnames:
+            sheetnames = [s_name]
+        else:
+            sheetnames = workbook.sheetnames
         # Iterate through all sheets
-        for sheet_name in workbook.sheetnames:
+        for sheet_name in sheetnames:
             sheet = workbook[sheet_name]
             output.append(f"\n### Sheet: {sheet_name} ###\n")
 
@@ -816,6 +666,46 @@ async def generate_test_scripts(document_text: str) -> list:
             "Test_Case_Type values are limited to: Mandatory, SCR Change, Boundary Test, Edge Case, Exception Test. For each test case, select the most appropriate Test_Case_Type value."
             "Do not include any additional text, just the JSON array in text. Every attribute should be a string. If a test case read seems appropriate, you may append it to your output as-is."
             )}
+        ]
+    )
+    output = response.choices[0].message.content
+    
+    # Remove the ```json and ``` delimiters if present
+    if output.startswith("```json"):
+        output = output[7:]  # Remove the initial ```json
+    if output.endswith("```"):
+        output = output[:-3]  # Remove the closing ```
+    
+    print(output)
+    
+    try:
+        # Parse the JSON response
+        test_cases = json.loads(output)
+        return test_cases  # Return the list of test case dictionaries
+    except json.JSONDecodeError:
+        raise ValueError("The API response is not valid JSON. Ensure the prompt enforces proper JSON formatting.")
+    
+    
+# Generate updated mandatory suites
+async def generate_updated_mandatory(new_test_cases_json: str, existing_mandatory_json: str) -> list:
+    response = openai.chat.completions.create(
+        model="gpt-4o-mini",  # Replace with your model
+        messages=[
+            {"role": "system", "content": "You are an assistant that generates software test scripts."},
+            {"role": "user", "content": (
+            f"These are test cases generated to test a software change request (SCR):\n\n{new_test_cases_json}.\n\n"
+            f"And these are the existing mandatory test cases for the module:\n\n{existing_mandatory_json}.\n\n"
+            "You are to merge the SCR test cases with the existing mandatory test cases, updating only what is affected by the SCR. "
+            "If a test case in the SCR reflects a changed behavior of an existing feature, update only the corresponding existing test case. "
+            "Leave unaffected test cases untouched. "
+            "If the SCR introduces an entirely new test case, append it to the list. "
+            "Do not remove or overwrite unrelated test cases from the existing list. "
+            "All final test cases in the output must have the 'Test_Case_Type' set to 'Mandatory'. "
+            "Return the final merged list of mandatory test cases as a JSON array (list) with each test case containing the following attributes: "
+            "Test_Case_ID, Test_Case_Name, Test_Case_Type, Pre_Condition, Actor_s, Test_Data, Step_Description, and Expected_Result. "
+            "Do not include any additional text, just the JSON array. Every attribute should be a string. "
+            "If an existing test case remains valid and unchanged, include it in your output as-is."
+        )}
         ]
     )
     output = response.choices[0].message.content

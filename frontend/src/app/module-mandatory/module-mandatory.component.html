@@ -21,7 +21,7 @@
     <input
       id="sheet-name"
       type="text"
-      (change)="onFileChange($event)"
+      (change)="onSheetChange($event)"
     />
     <br />
     <button (click)="onSubmit($event)" [disabled]="!file || isProcessing">

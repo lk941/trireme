@@ -48,6 +48,7 @@
     <span class="close" (click)="closeModal()">&times;</span>
     <h2>Create New Module</h2>
     <input type="text" [(ngModel)]="newModuleName" placeholder="Enter module name">
+    <br/>
     <button (click)="createModule()">Submit</button>
   </div>
 </div>
@@ -57,6 +58,7 @@
     <span class="close" (click)="closeMandModal()">&times;</span>
     <h2>Create New Mandatory Test Suite</h2>
     <input type="text" [(ngModel)]="newSuiteName" placeholder="Enter test suite name">
+    <br/>
     <button (click)="createSuite()">Submit</button>
   </div>
 </div>
